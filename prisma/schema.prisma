@@ -1,0 +1,154 @@
+// La Mega 99.9 — Prisma schema
+// Dev: SQLite (DATABASE_URL="file:./dev.db")
+// Prod: switch provider to "postgresql" — no SQLite-only features are used.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Public song requests from /pide. The on-air queue is status="approved",
+// ordered by approvedAt. status: pending | approved | on_air | rejected
+model SongRequest {
+  id            String    @id @default(uuid())
+  name          String
+  phone         String?
+  songTitle     String
+  songArtist    String
+  dedication    String?
+  preferredSlot String?
+  isSpecial     Boolean   @default(false)
+  specialFor    String?
+  occasion      String?
+  status        String    @default("pending")
+  createdAt     DateTime  @default(now())
+  approvedAt    DateTime?
+  airedAt       DateTime?
+
+  @@index([status, approvedAt])
+}
+
+// Advertising leads from /pide tab 2. status: new | contacted | active | paused
+model AdCampaign {
+  id           String   @id @default(uuid())
+  businessName String
+  contactName  String
+  email        String
+  phone        String?
+  adType       String
+  duration     String?
+  budget       String?
+  audience     String   @default("[]") // JSON array of strings (kept portable)
+  brief        String?
+  fileName     String?
+  status       String   @default("new")
+  createdAt    DateTime @default(now())
+}
+
+// Singleton (id = 1): current track pushed by the automation app.
+model NowPlaying {
+  id        Int       @id @default(1)
+  title     String
+  artist    String
+  album     String?
+  coverUrl  String?
+  duration  Int? // seconds
+  startedAt DateTime?
+  updatedAt DateTime  @updatedAt
+}
+
+// Singleton (id = 1): program currently on air.
+model CurrentProgram {
+  id          Int      @id @default(1)
+  programName String
+  host        String
+  startTime   String
+  endTime     String
+  isLive      Boolean  @default(true)
+  updatedAt   DateTime @updatedAt
+}
+
+// Singleton (id = 1): live listener count pushed by the automation app.
+model RadioStats {
+  id        Int      @id @default(1)
+  listeners Int      @default(0)
+  updatedAt DateTime @updatedAt
+}
+
+// Programs in the weekly grid + featured cards. Edited in /admin → Programación.
+// days: "semana" (Mon–Fri) | "sabado" | "domingo"
+model Show {
+  id        String  @id @default(uuid())
+  name      String
+  host      String
+  startTime String
+  endTime   String
+  days      String  @default("semana")
+  slot      String? // e.g. "MAÑANA" — label on the featured card
+  blurb     String? // featured card description
+  hue       String  @default("#E31E24")
+  isOn      Boolean @default(true)
+  featured  Boolean @default(false)
+  order     Int     @default(0)
+}
+
+// On-air team. Edited in /admin → Locutores.
+model Host {
+  id         String  @id @default(uuid())
+  name       String
+  alias      String  @default("")
+  show       String  @default("")
+  hue        String  @default("#E31E24")
+  photoUrl   String?
+  showsCount Int     @default(0)
+  order      Int     @default(0)
+}
+
+// Photo/video gallery (events, concerts, station life).
+// kind: "image" (uploaded) | "video" (uploaded mp4) | "youtube" (external URL)
+model MediaItem {
+  id        String   @id @default(uuid())
+  kind      String
+  url       String
+  title     String   @default("")
+  createdAt DateTime @default(now())
+  order     Int      @default(0)
+}
+
+// Spotify playlists. Edited in /admin → Playlists.
+model Playlist {
+  id         String  @id @default(uuid())
+  name       String
+  count      Int     @default(0)
+  hue1       String  @default("#E31E24")
+  hue2       String  @default("#7A1FC4")
+  spotifyUrl String?
+  order      Int     @default(0)
+}
+
+// Singleton (id = 1): station settings edited in /admin → Configuración.
+model StationConfig {
+  id          Int      @id @default(1)
+  frequency   String   @default("99.9 FM")
+  city        String   @default("Guayaquil")
+  coverage    String   @default("Ecuador")
+  slogan      String   @default("Solo La Mega, supera a La Mega")
+  streamOn    Boolean  @default(true)
+  tvOn        Boolean  @default(true)
+  pushOn      Boolean  @default(true)
+  autoOn      Boolean  @default(true)
+  maintenance Boolean  @default(false)
+  updatedAt   DateTime @updatedAt
+}
+
+// Singleton (id = 1): emergency mode flag shown site-wide + dashboard.
+model StationState {
+  id               Int      @id @default(1)
+  emergencyActive  Boolean  @default(false)
+  emergencyMessage String?
+  updatedAt        DateTime @updatedAt
+}

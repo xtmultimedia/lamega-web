@@ -1,0 +1,85 @@
+/* global React, Icon, usePlayer, fmt */
+// La Mega 99.9 — sticky bottom mini player (appears after hero)
+
+function MiniPlayer() {
+  const { track, playing, progress, volume, setVolume, next, prev, toggle, seek } = usePlayer();
+  const { useState, useEffect, useRef } = React;
+  const [show, setShow] = useState(false);
+  const barRef = useRef(null);
+  const frac = progress / track.dur;
+
+  useEffect(() => {
+    const onScroll = () => setShow(window.scrollY > window.innerHeight * 0.85);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const onBar = (e) => { const r = barRef.current.getBoundingClientRect(); seek((e.clientX - r.left) / r.width); };
+
+  return (
+    <div style={{
+      position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 90,
+      transform: show ? 'translateY(0)' : 'translateY(110%)',
+      transition: 'transform var(--dur-slow) var(--ease-out)',
+      background: 'rgba(12,12,13,0.82)', WebkitBackdropFilter: 'blur(22px) saturate(150%)', backdropFilter: 'blur(22px) saturate(150%)',
+      borderTop: '1px solid var(--line-red)', boxShadow: '0 -10px 40px rgba(0,0,0,0.6), 0 0 30px rgba(227,30,36,0.12)',
+    }}>
+      {/* progress line across top */}
+      <div ref={barRef} onClick={onBar} style={{ height: 4, background: 'rgba(255,255,255,0.08)', cursor: 'pointer', position: 'relative' }}>
+        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: (frac * 100) + '%', background: 'linear-gradient(90deg, var(--red), var(--red-bright))', boxShadow: '0 0 10px rgba(255,45,52,0.8)' }} />
+      </div>
+
+      <div className="mini-inner" style={{ maxWidth: 1440, margin: '0 auto', padding: '12px 40px', display: 'flex', alignItems: 'center', gap: 20 }}>
+        {/* now playing */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: 1, minWidth: 0 }}>
+          <div style={{ width: 48, height: 48, borderRadius: '50%', flexShrink: 0, background: `radial-gradient(circle at 35% 30%, ${track.hue}, #150708)`, display: 'flex', alignItems: 'center', justifyContent: 'center', animation: playing ? 'spin-slow 8s linear infinite' : 'none', boxShadow: '0 4px 14px rgba(0,0,0,0.5)' }}>
+            <span style={{ width: 12, height: 12, borderRadius: '50%', background: 'var(--bg)', border: '1.5px solid rgba(255,255,255,0.25)' }} />
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span className={'eq' + (playing ? '' : ' paused')} style={{ height: 10 }}><i></i><i></i><i></i><i></i></span>
+              <span className="mono" style={{ fontSize: 10, letterSpacing: '0.15em', color: 'var(--red-bright)' }}>EN VIVO · 99.9 FM</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, whiteSpace: 'nowrap', overflow: 'hidden' }}>
+              <span className="display" style={{ fontSize: 16, color: '#fff' }}>{track.title}</span>
+              <span style={{ fontSize: 13, color: 'var(--fg-2)', overflow: 'hidden', textOverflow: 'ellipsis' }}>· {track.artist}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* controls */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <button onClick={prev} aria-label="Anterior" className="mini-ctrl" style={miniBtn}><Icon name="skip-back" size={20} /></button>
+          <button onClick={toggle} aria-label={playing ? 'Pausar' : 'Reproducir'} className="mini-play" style={{
+            width: 46, height: 46, borderRadius: '50%', border: 'none', cursor: 'pointer',
+            background: 'linear-gradient(180deg, var(--red-bright), var(--red))', color: '#fff',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--glow-red)',
+          }}><Icon name={playing ? 'pause' : 'play'} size={20} strokeWidth={2.4} style={{ marginLeft: playing ? 0 : 2 }} /></button>
+          <button onClick={next} aria-label="Siguiente" className="mini-ctrl" style={miniBtn}><Icon name="skip-forward" size={20} /></button>
+        </div>
+
+        {/* volume + time */}
+        <div className="mini-vol" style={{ display: 'flex', alignItems: 'center', gap: 12, flex: '0 0 auto' }}>
+          <span className="mono" style={{ fontSize: 11, color: 'var(--fg-3)', minWidth: 78, textAlign: 'right' }}>{fmt(progress)} / {fmt(track.dur)}</span>
+          <Icon name={volume === 0 ? 'volume-x' : 'volume-2'} size={18} color="var(--fg-2)" />
+          <input type="range" min={0} max={1} step={0.01} value={volume} onChange={(e) => setVolume(Number(e.target.value))} aria-label="Volumen" style={{ width: 90, accentColor: 'var(--red)', height: 4 }} />
+        </div>
+      </div>
+      <style>{`
+        .mini-ctrl{ background:none; border:none; cursor:pointer; color:var(--fg-2); display:flex; transition:color var(--dur); }
+        .mini-ctrl:hover{ color:#fff; }
+        @media (max-width: 760px){
+          .mini-vol{ display:none !important; }
+          .mini-inner{ padding: 16px 16px calc(16px + env(safe-area-inset-bottom)) !important; gap: 12px !important; }
+          .mini-play{ width: 54px !important; height: 54px !important; }
+          .mini-ctrl{ padding: 6px; }
+        }
+        @media (max-width: 400px){ .mini-ctrl[aria-label="Anterior"]{ display:none !important; } }
+      `}</style>
+    </div>
+  );
+}
+const miniBtn = { background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-2)', display: 'flex' };
+
+window.MiniPlayer = MiniPlayer;

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>La Mega 99.9 — Solo La Mega · Supera a La Mega</title>
+  <link rel="icon" href="assets/mega-logo.png">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+  <script type="text/babel" src="data.jsx"></script>
+  <script type="text/babel" src="ui.jsx"></script>
+  <script type="text/babel" src="Nav.jsx"></script>
+  <script type="text/babel" src="Hero.jsx"></script>
+  <script type="text/babel" src="Ticker.jsx"></script>
+  <script type="text/babel" src="MegaTV.jsx"></script>
+  <script type="text/babel" src="Programacion.jsx"></script>
+  <script type="text/babel" src="Playlists.jsx"></script>
+  <script type="text/babel" src="MegaApp.jsx"></script>
+  <script type="text/babel" src="Social.jsx"></script>
+  <script type="text/babel" src="Footer.jsx"></script>
+  <script type="text/babel" src="MiniPlayer.jsx"></script>
+
+  <script type="text/babel">
+    const { useEffect } = React;
+
+    const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+      "accent": "#E31E24",
+      "glow": 1,
+      "blur": 18,
+      "visualizer": true
+    }/*EDITMODE-END*/;
+
+    const ACCENTS = {
+      '#E31E24': '#FF2D34',  // clásico
+      '#FF2D34': '#FF5A60',  // neón
+      '#C8102E': '#E8203C',  // sangre
+    };
+
+    function App() {
+      const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+
+      useEffect(() => {
+        const root = document.documentElement.style;
+        root.setProperty('--red', t.accent);
+        root.setProperty('--red-bright', ACCENTS[t.accent] || '#FF2D34');
+        root.setProperty('--glow-mult', t.glow);
+        root.setProperty('--glass-blur', t.blur + 'px');
+      }, [t.accent, t.glow, t.blur]);
+
+      return (
+        <PlayerProvider>
+          <Nav />
+          <Hero />
+          <Ticker />
+          <MegaTV />
+          <Programacion />
+          <Playlists />
+          {React.createElement(window.MegaApp)}
+          <Social />
+          <Footer />
+          <div aria-hidden="true" style={{ height: 'clamp(70px, 11vw, 88px)' }}></div>
+          <MiniPlayer />
+
+          <TweaksPanel title="Tweaks">
+            <TweakSection label="Marca" />
+            <TweakColor label="Color de acento" value={t.accent}
+              options={['#E31E24', '#FF2D34', '#C8102E']}
+              onChange={(v) => setTweak('accent', v)} />
+            <TweakSection label="Atmósfera" />
+            <TweakSlider label="Intensidad de neón" value={t.glow} min={0.3} max={1.8} step={0.1}
+              onChange={(v) => setTweak('glow', v)} />
+            <TweakSlider label="Desenfoque glass" value={t.blur} min={4} max={32} step={1} unit="px"
+              onChange={(v) => setTweak('blur', v)} />
+          </TweaksPanel>
+        </PlayerProvider>
+      );
+    }
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
