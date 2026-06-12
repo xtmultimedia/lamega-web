@@ -1,55 +1,62 @@
-# La Mega 99.9 FM — Sitio web + API de automatización
+# La Mega 99.9 FM — Sitio web oficial
 
-Aplicación web de producción para **La Mega 99.9 FM** (Guayaquil, Ecuador),
-implementada desde el diseño de Claude Design (`design-reference/`).
+Aplicación web de producción para **La Mega 99.9 FM**, la radio líder de Imbabura, Ecuador. Emite desde Ibarra las 24 horas con pop, urbano y los hits que mueven la provincia.
 
-- **Frontend:** Next.js 14 (App Router) + Tailwind CSS · diseño dark-stage
-  glassmorphism con Saira / Sora / Space Mono
-- **Tiempo real:** Server-Sent Events (`/api/radio/events`)
+- **Frontend:** Next.js 14 (App Router, TypeScript) + diseño dark-stage glassmorphism (Saira / Sora / Space Mono)
+- **Tiempo real:** Server-Sent Events (`/api/radio/events`) + lectura automática de metadatos ICY del stream
 - **Base de datos:** Prisma ORM — SQLite en dev, PostgreSQL en producción
 - **Auth:** NextAuth.js (credenciales desde `.env`) para `/admin`
 - **Email:** Resend (notificación al equipo comercial)
-- **API:** endpoints `/api/radio/*` para la app de automatización en Python
-  (ver [API.md](API.md) y [radio_client_example.py](radio_client_example.py))
+- **API:** endpoints `/api/radio/*` para la app de automatización Python
+- **Alexa:** Skill "La Mega Ecuador" gestionada por FastCast4U (invocación: *"Alexa, abre radio mega ecuador"*)
 
 ## Páginas
 
 | Ruta | Descripción |
 |---|---|
-| `/` | Landing: hero con player del stream en vivo, ticker, Mega TV, programación, playlists, app, redes, mini-player sticky |
+| `/` | Landing: hero con player en vivo, ticker, Mega TV, programación, playlists, app, redes, mini-player sticky |
 | `/pide` | Formulario público: pide tu canción · publicita en La Mega |
-| `/pide/print` | Versión imprimible del formulario (auto-`print()`) |
+| `/pide/print` | Versión imprimible del formulario |
 | `/admin` | Dashboard en tiempo real (login requerido) |
-| `/admin/login` | Acceso al panel |
+| `/admin/login` | Acceso al panel de administración |
 
-## Instalación
+## Instalación rápida
 
 ```bash
+git clone https://github.com/xtmultimedia/lamega-web.git
+cd lamega-web
 npm install
-cp .env.example .env        # edita los valores (ver abajo)
-# dev usa SQLite: en .env pon  DATABASE_URL=file:./dev.db
-npm run setup               # prisma generate + db push
-npm run dev                 # http://localhost:3000
+cp .env.example .env          # edita los valores (ver tabla abajo)
+npm run setup                 # prisma generate + db push
+npm run dev                   # http://localhost:3000
 ```
 
-Credenciales del dashboard en dev: las de `ADMIN_USER` / `ADMIN_PASSWORD` del `.env`.
+Credenciales del dashboard (dev): `ADMIN_USER` / `ADMIN_PASSWORD` del `.env`.
 
 ## Variables de entorno
 
-| Variable | Descripción |
-|---|---|
-| `STREAM_URL` / `NEXT_PUBLIC_STREAM_URL` | URL MP3 del stream (`http://usa3.fastcast4u.com:2250/stream`) |
-| `RADIO_API_KEY` | Clave del header `X-Radio-API-Key` para la app Python |
-| `DATABASE_URL` | `file:./dev.db` (dev) o `postgresql://…` (prod) |
-| `ADMIN_USER` / `ADMIN_PASSWORD` | Credenciales del dashboard |
-| `EMAIL_FROM` / `EMAIL_TO_COMERCIAL` | Remitente y destinatario de leads comerciales |
-| `RESEND_API_KEY` | API key de Resend (si está vacío, el email se omite con un warn) |
-| `NEXTAUTH_SECRET` | Secreto de sesión (`openssl rand -hex 32`) |
-| `NEXTAUTH_URL` | URL pública del sitio |
+| Variable | Descripción | Ejemplo |
+|---|---|---|
+| `STREAM_URL` | URL del stream (server-side, para leer metadatos ICY) | `https://usa3.fastcast4u.com/proxy/lamega?mp=/stream` |
+| `NEXT_PUBLIC_STREAM_URL` | URL del stream (browser, para el player de audio) | igual que arriba |
+| `RADIO_API_KEY` | Clave del header `X-Radio-API-Key` para la app Python | cadena aleatoria segura |
+| `DATABASE_URL` | SQLite en dev, PostgreSQL en prod | `file:./dev.db` |
+| `ADMIN_USER` / `ADMIN_PASSWORD` | Credenciales del dashboard | `admin` / `…` |
+| `EMAIL_FROM` | Remitente de emails | `noreply@lamegaecuador.com` |
+| `EMAIL_TO_COMERCIAL` | Destinatario de leads comerciales | `comercial@lamegaecuador.com` |
+| `RESEND_API_KEY` | API key de Resend (si está vacío, el email se omite) | `re_…` |
+| `NEXTAUTH_SECRET` | Secreto de sesión — generalo con `openssl rand -hex 32` | cadena hex |
+| `NEXTAUTH_URL` | URL pública del sitio | `https://lamegaecuador.com` |
 
-> Nota: el stream es `http://` (no TLS). Si el sitio se sirve por HTTPS, el
-> navegador puede bloquearlo como *mixed content*; pide a tu proveedor de
-> streaming la URL `https://` equivalente y ponla en `NEXT_PUBLIC_STREAM_URL`.
+## Scripts disponibles
+
+| Comando | Acción |
+|---|---|
+| `npm run dev` | Servidor de desarrollo (localhost:3000) |
+| `npm run build` | Build de producción |
+| `npm start` | Servidor de producción (tras build) |
+| `npm run setup` | `prisma generate` + `prisma db push` |
+| `npm run db:studio` | Prisma Studio para ver/editar datos |
 
 ## Conectar la app Python
 
@@ -60,57 +67,83 @@ export LAMEGA_API_KEY=<RADIO_API_KEY>
 python3 radio_client_example.py
 ```
 
-Documentación completa de endpoints y eventos SSE en [API.md](API.md).
+Documentación completa de endpoints, eventos SSE y ejemplos curl en [API.md](API.md).
+
+## Alexa Skill
+
+La skill está gestionada por FastCast4U y ya está activa en la tienda de Amazon.
+
+| Campo | Valor |
+|---|---|
+| Nombre público | La Mega Ecuador |
+| Invocación | `radio mega ecuador` |
+| Comando de voz | *"Alexa, abre radio mega ecuador"* |
+| Skill ID | `amzn1.ask.skill.58dbb174-5c01-4120-b01b-da5feeb1f87e` |
+| Tienda | [amazon.com/dp/amzn1.ask.skill.58dbb174-5c01-4120-b01b-da5feeb1f87e](https://www.amazon.com/dp/amzn1.ask.skill.58dbb174-5c01-4120-b01b-da5feeb1f87e) |
+
+El endpoint independiente `/api/alexa` (disponible en el repo) puede usarse para crear una skill custom alternativa si se decide migrar fuera de FastCast4U.
+
+## Arquitectura
+
+```
+Browser ──SSE──► /api/radio/events ◄── Python app (push)
+                       │
+                  EventEmitter (lib/events.ts)
+                       │
+         ┌─────────────┴──────────────┐
+     Prisma DB              ICY metadata poller
+  (SQLite / PG)          /api/nowplaying (15s)
+                        usa3.fastcast4u.com
+```
+
+Ver [ARCHITECTURE.md](ARCHITECTURE.md) para el diagrama completo del sistema.
 
 ## Cambiar a PostgreSQL (producción)
 
 1. En `prisma/schema.prisma` cambia `provider = "sqlite"` por `"postgresql"`.
-2. Pon la URL de Postgres en `DATABASE_URL`.
-3. `npx prisma db push` (o `prisma migrate deploy` si usas migraciones).
+2. Pon la URL en `DATABASE_URL`.
+3. `npx prisma db push` (o `prisma migrate deploy`).
 
-El schema no usa funciones exclusivas de SQLite, así que el cambio es directo.
+El schema no usa funciones exclusivas de SQLite — el cambio es directo.
 
 ## Despliegue
 
-### Vercel
+Ver [DEPLOYMENT.md](DEPLOYMENT.md) para guías detalladas de:
+- **FastComet** (hosting actual con cPanel + Node.js Passenger)
+- **Railway / Render / Fly.io** (recomendado para SSE persistente)
+- **Vercel** (con nota importante sobre SSE en serverless)
 
-1. Importa el repo en Vercel y define todas las variables de entorno
-   (usa PostgreSQL — p. ej. Vercel Postgres o Neon — en `DATABASE_URL`).
-2. El `build` ya ejecuta `prisma generate`.
-3. Ejecuta `npx prisma db push` contra la base de producción una vez.
-
-**Limitación importante (SSE en serverless):** `/api/radio/events` mantiene
-conexiones abiertas y usa un bus de eventos *en memoria del proceso*. En
-Vercel serverless cada función corre en instancias separadas, por lo que un
-POST de la app Python puede no llegar a los navegadores conectados a otra
-instancia, y las conexiones SSE se cortan al límite de duración de la función.
-
-**Recomendación para el tiempo real:** despliega en un host Node persistente
-(Railway, Render, Fly.io o un VPS con `npm run build && npm run start`).
-Ahí el SSE funciona tal cual. El cliente del navegador se reconecta solo y
-rehidrata el estado con el evento `snapshot`, así que cortes breves no
-rompen la experiencia.
-
-## Estructura
+## Estructura del proyecto
 
 ```
-app/                  páginas + API routes (App Router)
-  api/radio/*         API de automatización (X-Radio-API-Key) + SSE
-  api/requests        formulario "pide tu canción"
-  api/campaigns       formulario "publicita" (+ email Resend)
-  api/admin/*         endpoints del dashboard (sesión NextAuth)
-components/           UI portada del diseño (landing, form, admin, radio)
-lib/                  prisma, bus SSE, auth, helpers de estado
-prisma/schema.prisma  SongRequest · AdCampaign · NowPlaying · CurrentProgram · RadioStats · StationState
-design-reference/     diseño original de Claude Design (HTML/JSX)
-radio_client_example.py  cliente Python 3 de ejemplo
+app/
+  api/
+    radio/          API de automatización (X-Radio-API-Key) + SSE events
+    nowplaying/     Lector automático de metadatos ICY del stream
+    alexa/          Endpoint alternativo de Alexa AudioPlayer skill
+    requests/       Formulario "pide tu canción"
+    campaigns/      Formulario "publicita" (+ email Resend)
+    admin/          Endpoints del dashboard (sesión NextAuth)
+  admin/            Dashboard + login
+  pide/             Formulario público
+components/
+  landing/          Secciones de la landing (Hero, Ticker, MegaApp, etc.)
+  admin/            Componentes del dashboard
+  radio/            RadioProvider (contexto global del player + SSE)
+  ui.tsx            Primitivas de diseño (Icon, Section, Bloom, etc.)
+  data.ts           Datos estáticos de fallback
+lib/
+  prisma.ts         Singleton del cliente Prisma
+  events.ts         Bus SSE en memoria (globalThis)
+  radio-auth.ts     Middleware de autenticación por API key
+  auth.ts           Opciones de NextAuth
+  station.ts        Seed de datos reales de la estación
+prisma/
+  schema.prisma     Modelos: SongRequest, AdCampaign, NowPlaying, etc.
+public/assets/      Logo y assets estáticos
+radio_client_example.py  Cliente Python 3 de ejemplo
 ```
 
-## Scripts
+## Licencia
 
-| Comando | Acción |
-|---|---|
-| `npm run dev` | Servidor de desarrollo |
-| `npm run build` / `npm start` | Build y servidor de producción |
-| `npm run setup` | `prisma generate` + `prisma db push` |
-| `npm run db:studio` | Prisma Studio (ver/editar datos) |
+Código propietario — © 2026 La Mega 99.9 FM / XTMultimedia. Todos los derechos reservados.
