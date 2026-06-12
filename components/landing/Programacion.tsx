@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Icon, Section, SectionHead, Bloom } from "@/components/ui";
 import { DAYS, SCHEDULE, WEEKEND, PROGRAMS } from "@/components/data";
 import { useStationData, type PublicShow } from "@/components/useStationData";
@@ -51,22 +51,50 @@ function useProgramData() {
   };
 }
 
+// EQ spectrum — each row index maps to a frequency-band colour
+const EQ_COLORS = [
+  "#00D4FF", // 0 — cyan
+  "#7B2FFF", // 1 — indigo
+  "#FF00CC", // 2 — magenta
+  "#FF3A44", // 3 — red (La Mega)
+  "#FF6B00", // 4 — orange
+  "#FFD700", // 5 — yellow
+  "#00E676", // 6 — green
+  "#00B4D8", // 7 — sky
+  "#A855F7", // 8 — violet
+];
+const eqColor = (j: number) => EQ_COLORS[j % EQ_COLORS.length];
+
 function ScheduleGrid({ schedule, weekend }: { schedule: Block[]; weekend: Record<string, Block[]> }) {
-  const liveDay = new Date().getDay(); // 0 Sun .. 6 Sat
-  const dayIndex = (liveDay + 6) % 7; // 0 Mon .. 6 Sun
+  const liveDay = new Date().getDay();
+  const dayIndex = (liveDay + 6) % 7;
   const [openDay, setOpenDay] = useState(dayIndex);
   const blocksFor = (d: string) => (d === "SÁB" || d === "DOM" ? weekend[d] : schedule);
+
+  // Trigger EQ bar animation when the grid enters the viewport
+  const gridRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = gridRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { el.classList.add("eq-visible"); obs.disconnect(); } },
+      { threshold: 0.12 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
 
   return (
     <>
       {/* desktop / tablet grid */}
-      <div className="reveal glass sched-desktop" style={{ padding: 18, borderRadius: "var(--r-lg)", overflowX: "auto" }}>
+      <div ref={gridRef} className="glass sched-desktop" style={{ padding: 18, borderRadius: "var(--r-lg)", overflowX: "auto" }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(118px, 1fr))", gap: 10, minWidth: 840 }}>
           {DAYS.map((d, i) => {
             const blocks = blocksFor(d);
             const isToday = i === dayIndex;
             return (
               <div key={d}>
+                {/* day header */}
                 <div
                   style={{
                     textAlign: "center", padding: "9px 0", marginBottom: 10, borderRadius: "var(--r-sm)",
@@ -82,30 +110,50 @@ function ScheduleGrid({ schedule, weekend }: { schedule: Block[]; weekend: Recor
                     <span style={{ display: "block", fontSize: 9, fontFamily: "var(--font-mono)", opacity: 0.85, letterSpacing: "0.15em" }}>HOY</span>
                   )}
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {blocks.map((b, j) => (
-                    <div
-                      key={j}
-                      style={{
-                        padding: "11px 11px", borderRadius: "var(--r-sm)", background: "var(--bg-2)",
-                        border: "1px solid var(--line-1)", borderLeft: `3px solid ${b.hue}`,
-                        transition: "all var(--dur)", cursor: "default",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = "var(--bg-3)";
-                        e.currentTarget.style.transform = "translateX(2px)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = "var(--bg-2)";
-                        e.currentTarget.style.transform = "none";
-                      }}
-                    >
-                      <div className="mono" style={{ fontSize: 11, color: b.hue, marginBottom: 4 }}>{b.time}</div>
-                      <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 12.5, color: "#fff", lineHeight: 1.1, textTransform: "uppercase" }}>
-                        {b.name}
+
+                {/* EQ bars */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {blocks.map((b, j) => {
+                    const c = eqColor(j);
+                    return (
+                      <div
+                        key={j}
+                        className="eq-bar"
+                        style={{
+                          // @ts-ignore
+                          "--eq-c": c,
+                          "--eq-delay": `${j * 65 + i * 22}ms`,
+                          padding: "10px 11px",
+                          borderRadius: "var(--r-sm)",
+                          background: `linear-gradient(160deg, rgba(${hexToRgb(c)},0.18) 0%, rgba(${hexToRgb(c)},0.05) 100%)`,
+                          borderLeft: `3px solid ${c}`,
+                          borderTop: "1px solid rgba(255,255,255,0.06)",
+                          borderRight: "1px solid rgba(255,255,255,0.04)",
+                          borderBottom: "1px solid rgba(255,255,255,0.04)",
+                          boxShadow: `inset 2px 0 12px rgba(${hexToRgb(c)},0.10)`,
+                          transition: "all 0.2s ease",
+                          cursor: "default",
+                        } as React.CSSProperties}
+                        onMouseEnter={(e) => {
+                          const el = e.currentTarget;
+                          el.style.background = `linear-gradient(160deg, rgba(${hexToRgb(c)},0.32) 0%, rgba(${hexToRgb(c)},0.12) 100%)`;
+                          el.style.transform = "translateX(3px) scaleY(1.03)";
+                          el.style.boxShadow = `inset 2px 0 18px rgba(${hexToRgb(c)},0.22), 0 0 18px rgba(${hexToRgb(c)},0.18)`;
+                        }}
+                        onMouseLeave={(e) => {
+                          const el = e.currentTarget;
+                          el.style.background = `linear-gradient(160deg, rgba(${hexToRgb(c)},0.18) 0%, rgba(${hexToRgb(c)},0.05) 100%)`;
+                          el.style.transform = "none";
+                          el.style.boxShadow = `inset 2px 0 12px rgba(${hexToRgb(c)},0.10)`;
+                        }}
+                      >
+                        <div className="mono" style={{ fontSize: 10, color: c, marginBottom: 4, opacity: 0.9 }}>{b.time}</div>
+                        <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 12, color: "#fff", lineHeight: 1.1, textTransform: "uppercase" }}>
+                          {b.name}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             );
@@ -145,20 +193,26 @@ function ScheduleGrid({ schedule, weekend }: { schedule: Block[]; weekend: Recor
                   <Icon name="chevron-down" size={20} color="var(--fg-2)" style={{ transition: "transform var(--dur)", transform: isOpen ? "rotate(180deg)" : "none" }} />
                 </span>
               </button>
-              <div style={{ maxHeight: isOpen ? 600 : 0, overflow: "hidden", transition: "max-height var(--dur-slow) var(--ease-out)" }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "0 14px 14px" }}>
-                  {blocks.map((b, j) => (
-                    <div
-                      key={j}
-                      style={{
-                        display: "flex", alignItems: "center", gap: 14, padding: "12px 14px", borderRadius: "var(--r-sm)",
-                        background: "var(--bg-2)", border: "1px solid var(--line-1)", borderLeft: `3px solid ${b.hue}`,
-                      }}
-                    >
-                      <span className="mono" style={{ fontSize: 12, color: b.hue, minWidth: 48 }}>{b.time}</span>
-                      <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 14, color: "#fff", textTransform: "uppercase" }}>{b.name}</span>
-                    </div>
-                  ))}
+              <div style={{ maxHeight: isOpen ? 800 : 0, overflow: "hidden", transition: "max-height var(--dur-slow) var(--ease-out)" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6, padding: "0 14px 14px" }}>
+                  {blocks.map((b, j) => {
+                    const c = eqColor(j);
+                    return (
+                      <div
+                        key={j}
+                        style={{
+                          display: "flex", alignItems: "center", gap: 14, padding: "12px 14px", borderRadius: "var(--r-sm)",
+                          background: `linear-gradient(90deg, rgba(${hexToRgb(c)},0.16) 0%, rgba(${hexToRgb(c)},0.04) 100%)`,
+                          borderLeft: `3px solid ${c}`,
+                          border: `1px solid rgba(${hexToRgb(c)},0.18)`,
+                          borderLeftWidth: 3,
+                        }}
+                      >
+                        <span className="mono" style={{ fontSize: 12, color: c, minWidth: 48 }}>{b.time}</span>
+                        <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 14, color: "#fff", textTransform: "uppercase" }}>{b.name}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -167,13 +221,37 @@ function ScheduleGrid({ schedule, weekend }: { schedule: Block[]; weekend: Recor
       </div>
 
       <style>{`
+        /* EQ bar entrance animation */
+        @keyframes eq-bar-in {
+          from { transform: translateY(18px) scaleY(0.55); opacity: 0; }
+          to   { transform: translateY(0)    scaleY(1);    opacity: 1; }
+        }
+        .eq-bar {
+          opacity: 0;
+          transform-origin: bottom center;
+        }
+        .eq-visible .eq-bar {
+          animation: eq-bar-in 0.45s cubic-bezier(0.34,1.56,0.64,1) both;
+          animation-delay: var(--eq-delay, 0ms);
+        }
         @media (max-width: 768px){
           .sched-desktop{ display:none !important; }
           .sched-mobile{ display:flex !important; }
         }
+        @media (prefers-reduced-motion: reduce) {
+          .eq-bar { opacity: 1 !important; transform: none !important; animation: none !important; }
+        }
       `}</style>
     </>
   );
+}
+
+// Convert #RRGGBB to "R,G,B" for use in rgba()
+function hexToRgb(hex: string): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `${r},${g},${b}`;
 }
 
 function ProgramCard({ p }: { p: { name: string; time: string; slot: string; host: string; blurb: string; hue: string; photo?: string | null } }) {
