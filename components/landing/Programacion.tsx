@@ -111,10 +111,11 @@ function ScheduleGrid({ schedule, weekend }: { schedule: Block[]; weekend: Recor
                   )}
                 </div>
 
-                {/* EQ bars */}
+                {/* EQ bars — colour assigned by column (day index i) so each day
+                    is its own vertical frequency band, like a real EQ spectrum */}
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   {blocks.map((b, j) => {
-                    const c = eqColor(j);
+                    const c = eqColor(i);
                     return (
                       <div
                         key={j}
