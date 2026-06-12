@@ -72,12 +72,12 @@ export function Social() {
         index="05"
         kicker="NACIÓN MEGA"
         title={<>Síguenos en <span style={{ color: "var(--red)" }}>Redes</span></>}
-        lead="Más de un millón de seguidores viven La Mega cada día. Únete a la conversación."
+        lead="Más de 35 mil seguidores viven La Mega cada día en Imbabura y el mundo. Únete a la conversación."
       />
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 22 }} className="social-grid">
         {/* Instagram */}
-        <FeedShell platform="instagram" color={ig} handle="@lamega99.9ec" followers="284K">
+        <FeedShell platform="instagram" color={ig} handle="@lamega99.9ecuador" followers="15.6K">
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 3, padding: 3 }}>
             {[
               ["#E31E24", "#7A1FC4"], ["#1683C8", "#E31E24"], ["#D0307A", "#FF2D34"],
@@ -96,7 +96,7 @@ export function Social() {
         </FeedShell>
 
         {/* TikTok */}
-        <FeedShell platform="tiktok" color={tt} handle="@lamega99.9" followers="512K">
+        <FeedShell platform="tiktok" color={tt} handle="@lamega99.9ecuador" followers="12.3K">
           <div
             style={{
               position: "relative", aspectRatio: "3/4", background: "linear-gradient(160deg, #25F4EE22, #FE2C5522 60%, #0a0a0a)",
@@ -130,7 +130,7 @@ export function Social() {
         </FeedShell>
 
         {/* Facebook Live */}
-        <FeedShell platform="facebook" color={fb} handle="La Mega 99.9 Ecuador" followers="631K">
+        <FeedShell platform="facebook" color={fb} handle="La Mega 99.9 Ecuador" followers="7.5K">
           <div
             style={{
               position: "relative", aspectRatio: "16/10", background: "radial-gradient(120% 120% at 50% 0%, #16213e, #0a0a0a)",

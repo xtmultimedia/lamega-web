@@ -5,13 +5,20 @@ import { Icon, Section, Bloom } from "@/components/ui";
 import { APP_FEATURES } from "@/components/data";
 import { useRadio } from "@/components/radio/RadioProvider";
 
+const STORE_URLS = {
+  play: "https://play.google.com/store/apps/details?id=com.lamega999.radio",
+  apple: "https://apps.apple.com/us/app/la-mega-99-9/id1639162123",
+  alexa: "https://www.amazon.com/dp/amzn1.ask.skill.58dbb174-5c01-4120-b01b-da5feeb1f87e",
+};
+
 function StoreButton({ store }: { store: "play" | "apple" }) {
   const [h, setH] = useState(false);
   const isPlay = store === "play";
   return (
     <a
-      href="#"
-      onClick={(e) => e.preventDefault()}
+      href={STORE_URLS[store]}
+      target="_blank"
+      rel="noopener noreferrer"
       onMouseEnter={() => setH(true)}
       onMouseLeave={() => setH(false)}
       style={{
@@ -39,6 +46,40 @@ function StoreButton({ store }: { store: "play" | "apple" }) {
         </span>
         <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 16, color: "#fff" }}>
           {isPlay ? "Google Play" : "App Store"}
+        </span>
+      </span>
+    </a>
+  );
+}
+
+function AlexaButton() {
+  const [h, setH] = useState(false);
+  return (
+    <a
+      href={STORE_URLS.alexa}
+      target="_blank"
+      rel="noopener noreferrer"
+      onMouseEnter={() => setH(true)}
+      onMouseLeave={() => setH(false)}
+      style={{
+        display: "inline-flex", alignItems: "center", gap: 12, padding: "11px 20px", borderRadius: "var(--r-sm)",
+        background: h ? "#1a1f2e" : "#131921", border: "1px solid var(--line-2)",
+        transition: "all var(--dur)", transform: h ? "translateY(-2px)" : "none",
+        boxShadow: h ? "0 8px 24px rgba(0,0,0,0.5)" : "none",
+      }}
+    >
+      {/* Alexa ring icon */}
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="10" stroke="#00CAFF" strokeWidth="1.5" />
+        <circle cx="12" cy="12" r="6" fill="#00CAFF" opacity="0.18" />
+        <circle cx="12" cy="12" r="3" fill="#00CAFF" />
+      </svg>
+      <span style={{ textAlign: "left", lineHeight: 1.1 }}>
+        <span className="mono" style={{ display: "block", fontSize: 9, letterSpacing: "0.1em", color: "var(--fg-3)" }}>
+          DISPONIBLE EN
+        </span>
+        <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 16, color: "#fff" }}>
+          Amazon Alexa
         </span>
       </span>
     </a>
@@ -185,6 +226,12 @@ export function MegaApp() {
           <div className="reveal" style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
             <StoreButton store="play" />
             <StoreButton store="apple" />
+          </div>
+          <div className="reveal" style={{ display: "flex", gap: 14, flexWrap: "wrap", marginTop: 14, alignItems: "center" }}>
+            <AlexaButton />
+            <span style={{ fontSize: 12, color: "var(--fg-3)", fontFamily: "var(--font-mono)", lineHeight: 1.4 }}>
+              Di: <span style={{ color: "#00CAFF" }}>"Alexa, abre radio mega ecuador"</span>
+            </span>
           </div>
         </div>
         <PhoneMock />

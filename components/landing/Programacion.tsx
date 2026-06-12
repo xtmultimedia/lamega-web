@@ -233,7 +233,7 @@ export function Programacion() {
         index="02"
         kicker="LUNES A DOMINGO · 24/7"
         title={<>Nuestra <span style={{ color: "var(--red)" }}>Programación</span></>}
-        lead="Cuatro shows insignia que marcan el ritmo del día, más la parrilla completa de toda la semana."
+        lead="Los shows que marcan el ritmo del día en Imbabura, más la parrilla completa de toda la semana."
       />
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 20, marginBottom: 44 }}>

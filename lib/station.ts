@@ -1,45 +1,185 @@
 import { prisma } from "./prisma";
 
-// First-run seed: populates the editable tables with the design's demo
-// content so the dashboard starts with something to edit.
+// First-run seed populated from the filled questionnaire (Ibarra, Imbabura).
 
 const SHOW_SEED = [
-  { name: "Megapolis", host: 'Andrés "El Búho" Vera', startTime: "06:00", endTime: "10:00", days: "semana", slot: "MAÑANA", blurb: "Arranca el día con la energía más alta del dial: noticias, humor y los hits que mueven Ecuador.", hue: "#E31E24", featured: true },
-  { name: "El Ganado", host: "Dayanara Robles", startTime: "10:00", endTime: "14:00", days: "semana", slot: "MEDIODÍA", blurb: "El show del mediodía que lo gana todo. Reggaetón, retos al aire y la mejor conversación.", hue: "#FF2D34", featured: true },
-  { name: "La Tarde Mega", host: "Kevin Mora", startTime: "14:00", endTime: "18:00", days: "semana", slot: "TARDE", blurb: "La banda sonora de tu tarde: pop, dance y los pedidos de toda la nación Mega.", hue: "#D0307A", featured: true },
-  { name: "Mega Noche", host: "Camila Solís", startTime: "18:00", endTime: "22:00", days: "semana", slot: "NOCHE", blurb: "Baja revoluciones con flashbacks, rock latino y las historias que solo suenan de noche.", hue: "#7A1FC4", featured: true },
-  { name: "Mega Mix", host: "Automático", startTime: "22:00", endTime: "06:00", days: "semana", hue: "#1683C8", featured: false },
-  { name: "Sábado Gigante", host: "Automático", startTime: "08:00", endTime: "14:00", days: "sabado", hue: "#FF2D34", featured: false },
-  { name: "La Hora del Perreo", host: "Automático", startTime: "14:00", endTime: "20:00", days: "sabado", hue: "#D0307A", featured: false },
-  { name: "Mega Party", host: "Automático", startTime: "20:00", endTime: "02:00", days: "sabado", hue: "#7A1FC4", featured: false },
-  { name: "Domingo Relax", host: "Automático", startTime: "09:00", endTime: "14:00", days: "domingo", hue: "#1683C8", featured: false },
-  { name: "Top 9 Semanal", host: "Automático", startTime: "14:00", endTime: "20:00", days: "domingo", hue: "#E31E24", featured: false },
-  { name: "Flashback", host: "Automático", startTime: "20:00", endTime: "00:00", days: "domingo", hue: "#7A1FC4", featured: false },
+  // ── Lunes a Viernes ────────────────────────────────────────────────────────
+  {
+    name: "Mega Noticias",
+    host: "Paulina Puga & Tatiana Burbano",
+    startTime: "07:00", endTime: "08:00", days: "semana",
+    slot: "MAÑANA", blurb: "Arranca el día informado: las noticias de actualidad local, nacional e internacional.",
+    hue: "#1683C8", featured: false,
+  },
+  {
+    name: "Mega Click",
+    host: "Paulina Puga",
+    startTime: "08:00", endTime: "10:00", days: "semana",
+    slot: "MAÑANA", blurb: "Los mejores hits del rock latino de los 80s al 2000 para encender la mañana.",
+    hue: "#E31E24", featured: true,
+  },
+  {
+    name: "Megapolis",
+    host: "Joselyn Hernández & Marcos Cruz",
+    startTime: "10:00", endTime: "13:00", days: "semana",
+    slot: "MEDIODÍA", blurb: "Radio show con ritmos tropicales, humor y la mejor energía para tu jornada.",
+    hue: "#FF2D34", featured: true,
+  },
+  {
+    name: "Conexión 99",
+    host: "Liliana Sumba",
+    startTime: "13:00", endTime: "16:00", days: "semana",
+    slot: "TARDE", blurb: "Covers acústicos y baladas del 80 al 2024 para acompañar tu tarde.",
+    hue: "#D0307A", featured: false,
+  },
+  {
+    name: "Urban Beats",
+    host: "Automático",
+    startTime: "16:00", endTime: "18:00", days: "semana",
+    slot: "TARDE", blurb: "Segmento juvenil con las tendencias urbanas y los hits del momento.",
+    hue: "#7A1FC4", featured: false,
+  },
+  {
+    name: "Los de las 6",
+    host: "Daniel Andrade & Verónica Villegas",
+    startTime: "18:00", endTime: "20:00", days: "semana",
+    slot: "NOCHE", blurb: "Música selecta de los 80s al 2000 con el mejor equipo para cerrar tu día.",
+    hue: "#E31E24", featured: true,
+  },
+  {
+    name: "Los Cómplices de la Noche",
+    host: "Stefany Caicedo & Kevin Cevallos",
+    startTime: "20:00", endTime: "22:00", days: "semana",
+    slot: "NOCHE", blurb: "Radio revista nocturna con música variada y conversación para los trasnochadores.",
+    hue: "#7A1FC4", featured: false,
+  },
+  {
+    name: "Q' Noche La de Anoche",
+    host: "Automático",
+    startTime: "22:00", endTime: "23:00", days: "semana",
+    slot: "MADRUGADA", blurb: "Información y placer auditivo para cerrar la noche.",
+    hue: "#8E0F13", featured: false,
+  },
+  {
+    name: "Mega DJ",
+    host: "Automático",
+    startTime: "23:00", endTime: "07:00", days: "semana",
+    slot: "", blurb: "Solo éxitos contemporáneos en automático durante toda la madrugada.",
+    hue: "#1683C8", featured: false,
+  },
+
+  // ── Sábado ─────────────────────────────────────────────────────────────────
+  {
+    name: "Los Reyes de la Salsa",
+    host: "Carlos Andrade, Pablo Congo & Oscar Monteros",
+    startTime: "12:00", endTime: "15:00", days: "sabado",
+    slot: "SÁBADO", blurb: "Tres horas de salsa pura con los mejores exponentes del género.",
+    hue: "#FF2D34", featured: false,
+  },
+  {
+    name: "Mega DJ",
+    host: "Automático",
+    startTime: "15:00", endTime: "19:00", days: "sabado",
+    slot: "", blurb: "Solo éxitos contemporáneos.",
+    hue: "#D0307A", featured: false,
+  },
+  {
+    name: "DJ Tatto",
+    host: "DJ Tatto",
+    startTime: "19:00", endTime: "20:00", days: "sabado",
+    slot: "SÁBADO", blurb: "Radio show de house y dance para arrancar la noche del sábado.",
+    hue: "#7A1FC4", featured: false,
+  },
+  {
+    name: "Bastian V",
+    host: "Bastian V",
+    startTime: "20:00", endTime: "21:00", days: "sabado",
+    slot: "SÁBADO", blurb: "Radio show de house y dance.",
+    hue: "#1683C8", featured: false,
+  },
+  {
+    name: "Top 20",
+    host: "Automático",
+    startTime: "21:00", endTime: "23:00", days: "sabado",
+    slot: "SÁBADO", blurb: "El ranking de los 20 más escuchados de la semana en todos los géneros.",
+    hue: "#E31E24", featured: false,
+  },
+
+  // ── Domingo ─────────────────────────────────────────────────────────────────
+  {
+    name: "Bastian V",
+    host: "Bastian V",
+    startTime: "10:00", endTime: "11:00", days: "domingo",
+    slot: "DOMINGO", blurb: "Radio show de house y dance.",
+    hue: "#1683C8", featured: false,
+  },
+  {
+    name: "DJ Tatto",
+    host: "DJ Tatto",
+    startTime: "11:00", endTime: "12:00", days: "domingo",
+    slot: "DOMINGO", blurb: "Radio show de house y dance.",
+    hue: "#7A1FC4", featured: false,
+  },
+  {
+    name: "Top 20",
+    host: "Automático",
+    startTime: "12:00", endTime: "14:00", days: "domingo",
+    slot: "DOMINGO", blurb: "El ranking de los 20 más escuchados en todos los géneros.",
+    hue: "#E31E24", featured: false,
+  },
+  {
+    name: "Mega DJ",
+    host: "Automático",
+    startTime: "14:00", endTime: "18:00", days: "domingo",
+    slot: "", blurb: "Solo éxitos contemporáneos.",
+    hue: "#D0307A", featured: false,
+  },
+  {
+    name: "Mega Latin Rock",
+    host: "Automático",
+    startTime: "18:00", endTime: "20:00", days: "domingo",
+    slot: "DOMINGO", blurb: "Solo los éxitos del rock latino en una tarde dominical especial.",
+    hue: "#FF2D34", featured: false,
+  },
+  {
+    name: "Mega DJ",
+    host: "Automático",
+    startTime: "20:00", endTime: "07:00", days: "domingo",
+    slot: "", blurb: "Solo éxitos contemporáneos hasta el lunes.",
+    hue: "#8E0F13", featured: false,
+  },
 ];
 
 const HOST_SEED = [
-  { name: "Andrés Vera", alias: "El Búho", show: "Megapolis", hue: "#E31E24", showsCount: 312 },
-  { name: "Dayanara Robles", alias: "Daya", show: "El Ganado", hue: "#FF2D34", showsCount: 287 },
-  { name: "Kevin Mora", alias: "Kevo", show: "La Tarde Mega", hue: "#D0307A", showsCount: 198 },
-  { name: "Camila Solís", alias: "Cami", show: "Mega Noche", hue: "#7A1FC4", showsCount: 241 },
+  { name: "Paulina Puga",     alias: "Pauly",                  show: "Mega Click / Mega Noticias",        hue: "#E31E24", showsCount: 172 },
+  { name: "Tatiana Burbano",  alias: "Tatty",                  show: "Mega Noticias",                     hue: "#FF2D34", showsCount: 86  },
+  { name: "Joselyn Hernández",alias: "Joss",                   show: "Megapolis",                         hue: "#D0307A", showsCount: 151 },
+  { name: "Marcos Cruz",      alias: "Omega",                  show: "Megapolis",                         hue: "#7A1FC4", showsCount: 365 },
+  { name: "Liliana Sumba",    alias: "Lily",                   show: "Conexión 99",                       hue: "#FF2D34", showsCount: 172 },
+  { name: "Daniel Andrade",   alias: "Danny Rush",             show: "Los de las 6",                      hue: "#E31E24", showsCount: 624 },
+  { name: "Verónica Villegas",alias: "Shisuca",                show: "Los de las 6",                      hue: "#D0307A", showsCount: 172 },
+  { name: "Stefany Caicedo",  alias: "La Luz que Alumbra",     show: "Los Cómplices de la Noche",         hue: "#7A1FC4", showsCount: 516 },
+  { name: "Kevin Cevallos",   alias: "Tevo",                   show: "Los Cómplices de la Noche",         hue: "#1683C8", showsCount: 172 },
+  { name: "Carlos Andrade",   alias: "Viejo Bryan",            show: "Los Reyes de la Salsa",             hue: "#FF2D34", showsCount: 103 },
+  { name: "Pablo Congo",      alias: "DJ Pablo",               show: "Los Reyes de la Salsa",             hue: "#E31E24", showsCount: 103 },
+  { name: "Oscar Monteros",   alias: "Osito",                  show: "Los Reyes de la Salsa",             hue: "#D0307A", showsCount: 103 },
 ];
 
 const PLAYLIST_SEED = [
-  { name: "Reggaeton", count: 142, hue1: "#E31E24", hue2: "#7A1FC4" },
-  { name: "Pop", count: 98, hue1: "#FF2D34", hue2: "#D0307A" },
-  { name: "Rock", count: 76, hue1: "#8E0F13", hue2: "#222226" },
-  { name: "Dance", count: 120, hue1: "#1683C8", hue2: "#7A1FC4" },
-  { name: "Rock Latino", count: 64, hue1: "#D0307A", hue2: "#E31E24" },
-  { name: "Flashback", count: 88, hue1: "#7A1FC4", hue2: "#1683C8" },
-  { name: "Top 9", count: 9, hue1: "#FF2D34", hue2: "#8E0F13" },
+  { name: "Pop Hits",     count: 98,  hue1: "#FF2D34", hue2: "#D0307A", spotifyUrl: "https://l1nk.dev/4cy6bsf"    },
+  { name: "Urbano",       count: 124, hue1: "#E31E24", hue2: "#7A1FC4", spotifyUrl: "https://acesse.one/f1j9hqp"  },
+  { name: "House & Dance",count: 112, hue1: "#1683C8", hue2: "#7A1FC4", spotifyUrl: "https://acesse.one/76yqhg0"  },
+  { name: "Alternativo",  count: 76,  hue1: "#D0307A", hue2: "#8E0F13", spotifyUrl: "https://acesse.one/ftosqkg"  },
 ];
 
 export async function seedStationIfEmpty() {
-  const [shows, hosts, playlists] = await Promise.all([
+  const [shows, hosts, playlists, config] = await Promise.all([
     prisma.show.count(),
     prisma.host.count(),
     prisma.playlist.count(),
+    prisma.stationConfig.findUnique({ where: { id: 1 } }),
   ]);
+
   if (shows === 0) {
     await prisma.show.createMany({ data: SHOW_SEED.map((s, i) => ({ ...s, order: i })) });
   }
@@ -48,6 +188,22 @@ export async function seedStationIfEmpty() {
   }
   if (playlists === 0) {
     await prisma.playlist.createMany({ data: PLAYLIST_SEED.map((p, i) => ({ ...p, order: i })) });
+  }
+  if (!config) {
+    await prisma.stationConfig.create({
+      data: {
+        id: 1,
+        frequency: "99.9 FM",
+        city: "Ibarra",
+        coverage: "Imbabura",
+        slogan: "Solo La Mega",
+        streamOn: true,
+        tvOn: true,
+        pushOn: true,
+        autoOn: true,
+        maintenance: false,
+      },
+    });
   }
 }
 

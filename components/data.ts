@@ -10,54 +10,56 @@ export const NAV_LINKS = [
 
 export const PROGRAMS = [
   {
-    name: "MEGAPOLIS", time: "06:00 – 10:00", slot: "MAÑANA", host: 'Andrés "El Búho" Vera',
-    blurb: "Arranca el día con la energía más alta del dial: noticias, humor y los hits que mueven Ecuador.", hue: "#E31E24",
+    name: "MEGA CLICK", time: "08:00 – 10:00", slot: "MAÑANA", host: "Paulina Puga",
+    blurb: "Los mejores hits del rock latino de los 80s al 2000 para encender la mañana.", hue: "#E31E24",
   },
   {
-    name: "EL GANADO", time: "10:00 – 14:00", slot: "MEDIODÍA", host: "Dayanara Robles",
-    blurb: "El show del mediodía que lo gana todo. Reggaetón, retos al aire y la mejor conversación.", hue: "#FF2D34",
+    name: "MEGAPOLIS", time: "10:00 – 13:00", slot: "MEDIODÍA", host: "Joselyn Hernández & Marcos Cruz",
+    blurb: "Radio show con ritmos tropicales, humor y la mejor energía para tu jornada.", hue: "#FF2D34",
   },
   {
-    name: "LA TARDE MEGA", time: "14:00 – 18:00", slot: "TARDE", host: "Kevin Mora",
-    blurb: "La banda sonora de tu tarde: pop, dance y los pedidos de toda la nación Mega.", hue: "#D0307A",
-  },
-  {
-    name: "MEGA NOCHE", time: "18:00 – 22:00", slot: "NOCHE", host: "Camila Solís",
-    blurb: "Baja revoluciones con flashbacks, rock latino y las historias que solo suenan de noche.", hue: "#7A1FC4",
+    name: "LOS DE LAS 6", time: "18:00 – 20:00", slot: "NOCHE", host: "Daniel Andrade & Verónica Villegas",
+    blurb: "Música selecta de los 80s al 2000 con el mejor equipo para cerrar tu día.", hue: "#E31E24",
   },
 ];
 
 export const DAYS = ["LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB", "DOM"];
 
 export const SCHEDULE = [
-  { time: "06:00", name: "MEGAPOLIS", hue: "#E31E24" },
-  { time: "10:00", name: "EL GANADO", hue: "#FF2D34" },
-  { time: "14:00", name: "LA TARDE MEGA", hue: "#D0307A" },
-  { time: "18:00", name: "MEGA NOCHE", hue: "#7A1FC4" },
-  { time: "22:00", name: "MEGA MIX", hue: "#1683C8" },
+  { time: "07:00", name: "MEGA NOTICIAS",               hue: "#1683C8" },
+  { time: "08:00", name: "MEGA CLICK",                  hue: "#E31E24" },
+  { time: "10:00", name: "MEGAPOLIS",                   hue: "#FF2D34" },
+  { time: "13:00", name: "CONEXIÓN 99",                 hue: "#D0307A" },
+  { time: "16:00", name: "URBAN BEATS",                 hue: "#7A1FC4" },
+  { time: "18:00", name: "LOS DE LAS 6",                hue: "#E31E24" },
+  { time: "20:00", name: "LOS CÓMPLICES DE LA NOCHE",   hue: "#7A1FC4" },
+  { time: "22:00", name: "Q' NOCHE LA DE ANOCHE",       hue: "#8E0F13" },
+  { time: "23:00", name: "MEGA DJ",                     hue: "#1683C8" },
 ];
 
 export const WEEKEND: Record<string, { time: string; name: string; hue: string }[]> = {
   "SÁB": [
-    { time: "08:00", name: "SÁBADO GIGANTE", hue: "#FF2D34" },
-    { time: "14:00", name: "LA HORA DEL PERREO", hue: "#D0307A" },
-    { time: "20:00", name: "MEGA PARTY", hue: "#7A1FC4" },
+    { time: "12:00", name: "LOS REYES DE LA SALSA", hue: "#FF2D34" },
+    { time: "15:00", name: "MEGA DJ",               hue: "#D0307A" },
+    { time: "19:00", name: "DJ TATTO",              hue: "#7A1FC4" },
+    { time: "20:00", name: "BASTIAN V",             hue: "#1683C8" },
+    { time: "21:00", name: "TOP 20",                hue: "#E31E24" },
   ],
   "DOM": [
-    { time: "09:00", name: "DOMINGO RELAX", hue: "#1683C8" },
-    { time: "14:00", name: "TOP 9 SEMANAL", hue: "#E31E24" },
-    { time: "20:00", name: "FLASHBACK", hue: "#7A1FC4" },
+    { time: "10:00", name: "BASTIAN V",         hue: "#1683C8" },
+    { time: "11:00", name: "DJ TATTO",          hue: "#7A1FC4" },
+    { time: "12:00", name: "TOP 20",            hue: "#E31E24" },
+    { time: "14:00", name: "MEGA DJ",           hue: "#D0307A" },
+    { time: "18:00", name: "MEGA LATIN ROCK",   hue: "#FF2D34" },
+    { time: "20:00", name: "MEGA DJ",           hue: "#8E0F13" },
   ],
 };
 
 export const PLAYLISTS = [
-  { name: "REGGAETON", count: 142, hue1: "#E31E24", hue2: "#7A1FC4" },
-  { name: "POP", count: 98, hue1: "#FF2D34", hue2: "#D0307A" },
-  { name: "ROCK", count: 76, hue1: "#8E0F13", hue2: "#222226" },
-  { name: "DANCE", count: 120, hue1: "#1683C8", hue2: "#7A1FC4" },
-  { name: "ROCK LATINO", count: 64, hue1: "#D0307A", hue2: "#E31E24" },
-  { name: "FLASHBACK", count: 88, hue1: "#7A1FC4", hue2: "#1683C8" },
-  { name: "TOP 9", count: 9, hue1: "#FF2D34", hue2: "#8E0F13" },
+  { name: "POP HITS",      count: 98,  hue1: "#FF2D34", hue2: "#D0307A", spotifyUrl: "https://l1nk.dev/4cy6bsf"    },
+  { name: "URBANO",        count: 124, hue1: "#E31E24", hue2: "#7A1FC4", spotifyUrl: "https://acesse.one/f1j9hqp"  },
+  { name: "HOUSE & DANCE", count: 112, hue1: "#1683C8", hue2: "#7A1FC4", spotifyUrl: "https://acesse.one/76yqhg0"  },
+  { name: "ALTERNATIVO",   count: 76,  hue1: "#D0307A", hue2: "#8E0F13", spotifyUrl: "https://acesse.one/ftosqkg"  },
 ];
 
 export const APP_FEATURES = [

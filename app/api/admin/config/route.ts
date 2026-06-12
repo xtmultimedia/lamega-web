@@ -9,9 +9,9 @@ export const dynamic = "force-dynamic";
 
 const DEFAULTS = {
   frequency: "99.9 FM",
-  city: "Guayaquil",
-  coverage: "Ecuador",
-  slogan: "Solo La Mega, supera a La Mega",
+  city: "Ibarra",
+  coverage: "Imbabura",
+  slogan: "Solo La Mega",
   streamOn: true,
   tvOn: true,
   pushOn: true,

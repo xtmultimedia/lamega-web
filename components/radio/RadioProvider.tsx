@@ -52,9 +52,9 @@ export interface StationConfigInfo {
 
 const DEFAULT_CONFIG: StationConfigInfo = {
   frequency: "99.9 FM",
-  city: "Guayaquil",
-  coverage: "Ecuador",
-  slogan: "Solo La Mega, supera a La Mega",
+  city: "Ibarra",
+  coverage: "Imbabura",
+  slogan: "Solo La Mega",
 };
 
 interface RadioCtxValue {
@@ -77,9 +77,9 @@ interface RadioCtxValue {
 }
 
 const FALLBACK_TRACK: NowPlaying = {
-  title: "EL GANADO",
-  artist: "Dayanara",
-  duration: 213,
+  title: "EN VIVO",
+  artist: "La Mega 99.9 FM",
+  duration: null,
   started_at: null,
 };
 
@@ -245,8 +245,24 @@ export function RadioProvider({ children }: { children: React.ReactNode }) {
     };
 
     connect();
+
+    // Poll /api/nowplaying every 15 s — reads ICY stream metadata automatically.
+    // The SSE event from the server (now_playing_update) takes precedence if
+    // the Python automation app is running; this is the no-automation fallback.
+    const pollNowPlaying = async () => {
+      try {
+        const res = await fetch("/api/nowplaying");
+        if (!res.ok) return;
+        const d = await res.json();
+        if (d.title) setNowPlaying({ title: d.title, artist: d.artist ?? "La Mega 99.9" });
+      } catch {}
+    };
+    pollNowPlaying(); // immediate first fetch
+    const pollId = setInterval(pollNowPlaying, 15_000);
+
     return () => {
       stopped = true;
+      clearInterval(pollId);
       if (retry) clearTimeout(retry);
       es?.close();
     };

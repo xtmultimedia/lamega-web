@@ -6,9 +6,9 @@ import { useRadio } from "@/components/radio/RadioProvider";
 
 const FOOT_COLS = [
   { title: "Sobre Nosotros", links: ["Quiénes somos", "Historia", "Nuestro equipo", "Trabaja con nosotros", "Prensa"] },
-  { title: "Programación", links: ["Megapolis", "El Ganado", "La Tarde Mega", "Mega Noche", "Parrilla completa"] },
+  { title: "Programación", links: ["Mega Click", "Megapolis", "Los de las 6", "Los Cómplices de la Noche", "Parrilla completa"] },
   { title: "Legal", links: ["Términos de uso", "Política de privacidad", "Concursos y bases", "Cookies"] },
-  { title: "Contacto", links: ["Cabina: 099 999 99 99", "Comercial", "WhatsApp", "Guayaquil, Ecuador"] },
+  { title: "Contacto", links: ["Cabina: 096 13 14 999", "megacontacto@yahoo.com", "WhatsApp: 096 13 14 999", "Ibarra, Imbabura"] },
 ];
 
 function FootLink({ children }: { children: React.ReactNode }) {

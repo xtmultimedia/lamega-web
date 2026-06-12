@@ -8,11 +8,11 @@ export function Ticker() {
   const items = [
     "EN VIVO",
     `${nowPlaying.title} · ${nowPlaying.artist}`,
-    "LA MEGA 99.9",
     `${config.frequency} ${config.coverage}`.toUpperCase(),
     config.slogan.toUpperCase(),
     config.city.toUpperCase(),
-    "PIDE TU TEMA AL 099 999 99 99",
+    "PIDE TU TEMA AL 096 13 14 999",
+    "ALEXA, ABRE RADIO MEGA ECUADOR",
   ];
   const run = (k: string) => (
     <div key={k} style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>

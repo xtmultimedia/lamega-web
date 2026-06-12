@@ -215,7 +215,7 @@ export function Hero() {
           <div className="reveal" style={{ display: "inline-flex", alignItems: "center", gap: 10, marginBottom: 26 }}>
             <span className="kicker" style={{ color: "var(--fg-2)" }}>99.9 FM</span>
             <span style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--red)" }} />
-            <span className="kicker" style={{ color: "var(--fg-2)" }}>Ecuador</span>
+            <span className="kicker" style={{ color: "var(--fg-2)" }}>Imbabura</span>
             <span style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--red)" }} />
             <span className="kicker">En Vivo</span>
           </div>
@@ -226,7 +226,7 @@ export function Hero() {
             </span>
           </h1>
           <p className="reveal" style={{ fontSize: 19, lineHeight: 1.55, color: "var(--fg-2)", maxWidth: 460, margin: "26px 0 36px" }}>
-            La radio que manda en Ecuador. Reggaetón, pop y los hits que mueven al país — al aire las 24 horas desde Guayaquil.
+            La radio líder de Imbabura. Pop, urbano y los hits que mueven la provincia — al aire las 24 horas desde Ibarra.
           </p>
           <div className="reveal" style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
             <Button variant="primary" size="lg" iconLeft={playing ? "pause" : "play"} onClick={toggle}>
