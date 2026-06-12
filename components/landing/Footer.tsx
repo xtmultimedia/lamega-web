@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Icon, SocialIcon } from "@/components/ui";
+import { Icon } from "@/components/ui";
 import { useRadio } from "@/components/radio/RadioProvider";
 
 const FOOT_COLS = [
@@ -65,15 +65,6 @@ export function Footer() {
           ))}
         </div>
 
-        {/* social row */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 18, padding: "40px 0" }}>
-          <div className="mono" style={{ fontSize: 12, letterSpacing: "0.2em", color: "var(--fg-3)" }}>SÍGUENOS</div>
-          <div style={{ display: "flex", gap: 14 }}>
-            {["instagram", "tiktok", "facebook", "youtube", "spotify"].map((n) => (
-              <SocialIcon key={n} name={n} size={22} />
-            ))}
-          </div>
-        </div>
       </div>
 
       {/* bottom bar */}
