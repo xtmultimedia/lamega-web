@@ -254,7 +254,7 @@ export function RadioProvider({ children }: { children: React.ReactNode }) {
         const res = await fetch("/api/nowplaying");
         if (!res.ok) return;
         const d = await res.json();
-        if (d.title) setNowPlaying({ title: d.title, artist: d.artist ?? "La Mega 99.9" });
+        if (d.title) setNowPlaying({ title: d.title, artist: d.artist ?? "La Mega 99.9", cover_url: d.cover_url ?? null });
       } catch {}
     };
     pollNowPlaying(); // immediate first fetch

@@ -135,22 +135,35 @@ function PhoneMock() {
           </div>
           {/* big album */}
           <div style={{ padding: "6px 20px 0", flex: 1, display: "flex", flexDirection: "column" }}>
-            <div
-              style={{
-                aspectRatio: "1", borderRadius: 18, background: "radial-gradient(circle at 35% 30%, #E31E24, #150708)",
-                position: "relative", boxShadow: "0 16px 36px rgba(227,30,36,0.3)",
-                display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18,
-              }}
-            >
-              <span
+            {nowPlaying.cover_url ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={nowPlaying.cover_url}
+                alt={nowPlaying.title}
                 style={{
-                  width: 54, height: 54, borderRadius: "50%", background: "rgba(0,0,0,0.4)",
-                  border: "1px solid rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center",
+                  width: "100%", aspectRatio: "1", objectFit: "cover",
+                  borderRadius: 18, display: "block", marginBottom: 18,
+                  boxShadow: "0 16px 36px rgba(0,0,0,0.5)",
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  aspectRatio: "1", borderRadius: 18, background: "radial-gradient(circle at 35% 30%, #E31E24, #150708)",
+                  position: "relative", boxShadow: "0 16px 36px rgba(227,30,36,0.3)",
+                  display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18,
                 }}
               >
-                <Icon name="radio" size={26} color="#fff" />
-              </span>
-            </div>
+                <span
+                  style={{
+                    width: 54, height: 54, borderRadius: "50%", background: "rgba(0,0,0,0.4)",
+                    border: "1px solid rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center",
+                  }}
+                >
+                  <Icon name="radio" size={26} color="#fff" />
+                </span>
+              </div>
+            )}
             <div className="mono" style={{ fontSize: 9, letterSpacing: "0.2em", color: "var(--red-bright)", marginBottom: 4 }}>SONANDO AHORA</div>
             <div className="display" style={{ fontSize: 22, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               {nowPlaying.title}

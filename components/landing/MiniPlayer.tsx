@@ -46,19 +46,29 @@ export function MiniPlayer() {
       >
         {/* now playing */}
         <div style={{ display: "flex", alignItems: "center", gap: 14, flex: 1, minWidth: 0 }}>
-          <div
-            style={{
-              width: 48, height: 48, borderRadius: "50%", flexShrink: 0,
-              background: nowPlaying.cover_url
-                ? `url(${nowPlaying.cover_url}) center/cover`
-                : "radial-gradient(circle at 35% 30%, #E31E24, #150708)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              animation: playing ? "spin-slow 8s linear infinite" : "none",
-              boxShadow: "0 4px 14px rgba(0,0,0,0.5)",
-            }}
-          >
-            <span style={{ width: 12, height: 12, borderRadius: "50%", background: "var(--bg)", border: "1.5px solid rgba(255,255,255,0.25)" }} />
-          </div>
+          {nowPlaying.cover_url ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={nowPlaying.cover_url}
+              alt={nowPlaying.title}
+              style={{
+                width: 48, height: 48, borderRadius: 8, flexShrink: 0,
+                objectFit: "cover", boxShadow: "0 4px 14px rgba(0,0,0,0.5)",
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                width: 48, height: 48, borderRadius: "50%", flexShrink: 0,
+                background: "radial-gradient(circle at 35% 30%, #E31E24, #150708)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                animation: playing ? "spin-slow 8s linear infinite" : "none",
+                boxShadow: "0 4px 14px rgba(0,0,0,0.5)",
+              }}
+            >
+              <span style={{ width: 12, height: 12, borderRadius: "50%", background: "var(--bg)", border: "1.5px solid rgba(255,255,255,0.25)" }} />
+            </div>
+          )}
           <div style={{ minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span className={"eq" + (playing ? "" : " paused")} style={{ height: 10 }}>

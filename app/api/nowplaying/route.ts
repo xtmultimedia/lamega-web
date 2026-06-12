@@ -10,7 +10,7 @@ import { emit } from "@/lib/events";
 
 export const dynamic = "force-dynamic";
 
-interface TrackMeta { title: string; artist: string }
+interface TrackMeta { title: string; artist: string; cover_url?: string | null }
 
 let cache: (TrackMeta & { ts: number }) | null = null;
 const CACHE_MS = 15_000;
@@ -27,6 +27,28 @@ function parseMeta(raw: string): TrackMeta | null {
   const dash = full.indexOf(" - ");
   if (dash > 0) return { artist: full.slice(0, dash).trim(), title: full.slice(dash + 3).trim() };
   return { title: full, artist: "La Mega 99.9" };
+}
+
+async function fetchCover(artist: string, title: string): Promise<string | null> {
+  try {
+    const term = encodeURIComponent(`${artist} ${title}`);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5_000);
+    const res = await fetch(
+      `https://itunes.apple.com/search?term=${term}&media=music&entity=song&limit=1`,
+      { signal: controller.signal, next: { revalidate: 0 } }
+    );
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const url: string | undefined = data?.results?.[0]?.artworkUrl100;
+    if (!url) return null;
+    // Upgrade 100×100 thumbnail to 600×600
+    return url.replace("100x100bb", "600x600bb");
+  } catch (e) {
+    console.error("[nowplaying] fetchCover error:", e);
+    return null;
+  }
 }
 
 function readIcyMeta(streamUrl: string): Promise<TrackMeta | null> {
@@ -83,7 +105,7 @@ export async function GET() {
   const now = Date.now();
 
   if (cache && now - cache.ts < CACHE_MS) {
-    return NextResponse.json({ title: cache.title, artist: cache.artist, cached: true });
+    return NextResponse.json({ title: cache.title, artist: cache.artist, cover_url: cache.cover_url ?? null, cached: true });
   }
 
   const url = process.env.NEXT_PUBLIC_STREAM_URL ?? "";
@@ -94,12 +116,22 @@ export async function GET() {
     cache = { ts: now, ...meta };
 
     const changed = !prev || prev.title !== meta.title || prev.artist !== meta.artist;
+    if (!changed && prev?.cover_url) {
+      // Same track — carry over existing cover into both meta and cache
+      meta.cover_url = prev.cover_url;
+      cache = { ...cache!, cover_url: prev.cover_url };
+    }
     if (changed) {
+      // Fetch album art from iTunes in parallel with the DB write
+      const cover_url = await fetchCover(meta.artist, meta.title);
+      meta.cover_url = cover_url;
+      cache = { ts: now, ...meta };
+
       try {
         const row = await prisma.nowPlaying.upsert({
           where: { id: 1 },
-          create: { id: 1, title: meta.title, artist: meta.artist, startedAt: new Date() },
-          update: { title: meta.title, artist: meta.artist, startedAt: new Date() },
+          create: { id: 1, title: meta.title, artist: meta.artist, coverUrl: cover_url, startedAt: new Date() },
+          update: { title: meta.title, artist: meta.artist, coverUrl: cover_url, startedAt: new Date() },
         });
         emit("now_playing_update", {
           title: row.title,
@@ -112,7 +144,7 @@ export async function GET() {
       } catch {}
     }
 
-    return NextResponse.json({ title: meta.title, artist: meta.artist, cached: false });
+    return NextResponse.json({ title: meta.title, artist: meta.artist, cover_url: meta.cover_url ?? null, cached: false });
   }
 
   // Fallback: last known track from DB

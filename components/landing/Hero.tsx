@@ -72,43 +72,90 @@ export function PlayerCard() {
         <OnAir compact />
       </div>
 
-      {/* now playing */}
-      <div style={{ display: "flex", alignItems: "center", gap: 18, marginBottom: 22 }}>
-        <div style={{ position: "relative", width: 92, height: 92, flexShrink: 0 }}>
-          <span
+      {/* album art — big square when cover available, vinyl disc otherwise */}
+      {nowPlaying.cover_url ? (
+        <div style={{ position: "relative", marginBottom: 20 }}>
+          {/* glow behind art */}
+          <div
+            aria-hidden="true"
             style={{
-              position: "absolute", inset: -6, borderRadius: "50%", border: "2px solid var(--red-bright)",
-              opacity: playing ? 1 : 0.3, animation: playing ? "pulse-ring 2s var(--ease-out) infinite" : "none",
+              position: "absolute", inset: "-8px", borderRadius: 22,
+              background: `url(${nowPlaying.cover_url}) center/cover`,
+              filter: "blur(28px) saturate(160%)", opacity: 0.45, zIndex: 0,
             }}
           />
-          <div
-            style={{
-              width: 92, height: 92, borderRadius: "50%", position: "relative",
-              background: nowPlaying.cover_url
-                ? `url(${nowPlaying.cover_url}) center/cover`
-                : `radial-gradient(circle at 35% 30%, ${hue}, #120608 75%)`,
-              boxShadow: "inset 0 2px 10px rgba(255,255,255,0.18), inset 0 -8px 20px rgba(0,0,0,0.6), 0 6px 20px rgba(0,0,0,0.6)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              animation: playing ? "spin-slow 8s linear infinite" : "none",
-            }}
-          >
-            <span style={{ position: "absolute", inset: 14, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.10)" }} />
-            <span style={{ position: "absolute", inset: 24, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.07)" }} />
-            <span style={{ width: 22, height: 22, borderRadius: "50%", background: "var(--bg)", border: "2px solid rgba(255,255,255,0.2)" }} />
+          <div style={{ position: "relative", zIndex: 1 }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={nowPlaying.cover_url}
+              alt={`${nowPlaying.title} – ${nowPlaying.artist}`}
+              style={{
+                width: "100%", aspectRatio: "1", objectFit: "cover",
+                borderRadius: 16, display: "block",
+                boxShadow: "0 20px 50px rgba(0,0,0,0.7)",
+              }}
+            />
+            {/* playing pulse ring overlay */}
+            {playing && (
+              <span
+                style={{
+                  position: "absolute", inset: -4, borderRadius: 20,
+                  border: "2px solid var(--red-bright)", opacity: 0.6,
+                  animation: "pulse-ring 2s var(--ease-out) infinite",
+                  pointerEvents: "none",
+                }}
+              />
+            )}
+          </div>
+          <div style={{ marginTop: 16 }}>
+            <div className="mono" style={{ fontSize: 10, letterSpacing: "0.2em", color: "var(--red-bright)", textTransform: "uppercase", marginBottom: 6 }}>
+              Sonando ahora
+            </div>
+            <div className="display" style={{ fontSize: 26, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {nowPlaying.title}
+            </div>
+            <div style={{ fontSize: 14, color: "var(--fg-2)", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {nowPlaying.artist}
+            </div>
           </div>
         </div>
-        <div style={{ minWidth: 0, flex: 1 }}>
-          <div className="mono" style={{ fontSize: 11, letterSpacing: "0.2em", color: "var(--fg-3)", textTransform: "uppercase", marginBottom: 6 }}>
-            Sonando ahora
+      ) : (
+        /* no cover: classic vinyl disc layout */
+        <div style={{ display: "flex", alignItems: "center", gap: 18, marginBottom: 22 }}>
+          <div style={{ position: "relative", width: 92, height: 92, flexShrink: 0 }}>
+            <span
+              style={{
+                position: "absolute", inset: -6, borderRadius: "50%", border: "2px solid var(--red-bright)",
+                opacity: playing ? 1 : 0.3, animation: playing ? "pulse-ring 2s var(--ease-out) infinite" : "none",
+              }}
+            />
+            <div
+              style={{
+                width: 92, height: 92, borderRadius: "50%", position: "relative",
+                background: `radial-gradient(circle at 35% 30%, ${hue}, #120608 75%)`,
+                boxShadow: "inset 0 2px 10px rgba(255,255,255,0.18), inset 0 -8px 20px rgba(0,0,0,0.6), 0 6px 20px rgba(0,0,0,0.6)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                animation: playing ? "spin-slow 8s linear infinite" : "none",
+              }}
+            >
+              <span style={{ position: "absolute", inset: 14, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.10)" }} />
+              <span style={{ position: "absolute", inset: 24, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.07)" }} />
+              <span style={{ width: 22, height: 22, borderRadius: "50%", background: "var(--bg)", border: "2px solid rgba(255,255,255,0.2)" }} />
+            </div>
           </div>
-          <div className="display" style={{ fontSize: 28, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {nowPlaying.title}
-          </div>
-          <div style={{ fontSize: 15, color: "var(--fg-2)", marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {nowPlaying.artist}
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div className="mono" style={{ fontSize: 11, letterSpacing: "0.2em", color: "var(--fg-3)", textTransform: "uppercase", marginBottom: 6 }}>
+              Sonando ahora
+            </div>
+            <div className="display" style={{ fontSize: 28, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {nowPlaying.title}
+            </div>
+            <div style={{ fontSize: 15, color: "var(--fg-2)", marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {nowPlaying.artist}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* progress (live track position pushed by the automation app) */}
       <div style={{ marginBottom: 20 }}>
