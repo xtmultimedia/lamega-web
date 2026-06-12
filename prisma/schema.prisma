@@ -1,8 +1,14 @@
 // La Mega 99.9 — Prisma schema
 // Prod: MySQL on FastComet (DATABASE_URL="mysql://user:pass@localhost:3306/db")
 
+// NOTE: Prisma is no longer used at runtime. The app talks to MySQL through a
+// lightweight mysql2-backed shim in lib/prisma.ts because Prisma's query engine
+// cannot run on the FastComet shared host (NPROC=80; library engine panics,
+// binary engine fork-bombs). This schema is kept only as the source-of-truth
+// for the table/column shapes.
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-1.1.x", "debian-openssl-1.1.x"]
 }
 
 datasource db {
