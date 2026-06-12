@@ -1,13 +1,12 @@
 // La Mega 99.9 — Prisma schema
-// Dev: SQLite (DATABASE_URL="file:./dev.db")
-// Prod: switch provider to "postgresql" — no SQLite-only features are used.
+// Prod: MySQL on FastComet (DATABASE_URL="mysql://user:pass@localhost:3306/db")
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
