@@ -108,7 +108,7 @@ function TikTokCard() {
         followers="12.4K"
         url="https://www.tiktok.com/@lamega99.9ecuador"
       />
-      <a href="https://www.tiktok.com/@lamega99.9" target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
+      <a href="https://www.tiktok.com/@lamega99.9ecuador" target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
         <div
           style={{
             position: "relative", aspectRatio: "9/14", margin: 3, borderRadius: "var(--r-sm)", overflow: "hidden",
