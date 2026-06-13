@@ -1,8 +1,15 @@
 "use client";
 
 import React, { useState } from "react";
-import { Icon, Section, SectionHead, Bloom, OnAir, SOCIAL } from "@/components/ui";
+import { Section, SectionHead, Bloom, SOCIAL } from "@/components/ui";
 import { useRadio } from "@/components/radio/RadioProvider";
+
+// OneStream Live "Universal Embed Player" — one permanent embed for all events.
+// Shows the configured offline poster when not broadcasting and auto-connects
+// the moment a stream goes LIVE in OneStream (no manual switch on the site).
+// Customize the offline poster in OneStream → Universal Embed Settings →
+// Universal Player → Background.
+const ONESTREAM_EMBED = "https://player.onestream.live/embed?token=MzY0MzEzMQ==&type=up";
 
 function LivePill({ name, color, icon, href }: { name: string; color: string; icon: string; href: string }) {
   const [h, setH] = useState(false);
@@ -32,10 +39,9 @@ function LivePill({ name, color, icon, href }: { name: string; color: string; ic
 }
 
 export function MegaTV() {
-  const [playing, setPlaying] = useState(false);
   const { program } = useRadio();
   const fb = SOCIAL.facebook, tt = SOCIAL.tiktok, yt = SOCIAL.youtube;
-  const nowOn = program ? `${program.program_name} · ${program.host}` : "El Ganado · Mediodía";
+  const nowOn = program ? `${program.program_name} · ${program.host}` : null;
 
   return (
     <Section id="megatv" style={{ background: "var(--bg-1)", borderTop: "1px solid var(--line-1)", borderBottom: "1px solid var(--line-1)" }}>
@@ -48,7 +54,7 @@ export function MegaTV() {
         lead="Entra a la cabina. Transmitimos los shows en vivo y a todo color, directo desde el estudio."
       />
 
-      {/* video player */}
+      {/* live video player — OneStream Universal Embed (offline poster ↔ live, automatic) */}
       <div
         className="reveal"
         style={{
@@ -58,71 +64,49 @@ export function MegaTV() {
           background: "radial-gradient(120% 120% at 50% 0%, #1c0a0c, #0a0a0a 70%)",
         }}
       >
-        <div
-          aria-hidden="true"
-          style={{ position: "absolute", inset: 0, background: "repeating-linear-gradient(180deg, transparent 0 3px, rgba(0,0,0,0.18) 3px 4px)", opacity: 0.5 }}
-        />
-        <div
-          aria-hidden="true"
-          style={{ position: "absolute", inset: 0, background: "radial-gradient(circle at 50% 45%, rgba(227,30,36,0.18), transparent 55%)" }}
+        <iframe
+          src={ONESTREAM_EMBED}
+          title="Mega TV 99.9 — señal en vivo"
+          allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+          allowFullScreen
+          loading="lazy"
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0, display: "block" }}
         />
 
-        {/* live badge */}
-        <div style={{ position: "absolute", top: 20, left: 20, display: "flex", gap: 10, alignItems: "center" }}>
-          <OnAir compact />
-          <span
-            className="mono"
-            style={{ background: "rgba(0,0,0,0.5)", padding: "6px 11px", borderRadius: "var(--r-pill)", fontSize: 11, color: "#fff", backdropFilter: "blur(6px)" }}
-          >
-            ● 1.243 viendo
-          </span>
-        </div>
-        <div style={{ position: "absolute", top: 20, right: 20 }}>
-          <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 15, letterSpacing: "0.08em", color: "rgba(255,255,255,0.85)" }}>
+        {/* brand wordmark — top-right, non-interactive so it never blocks player controls */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: "absolute", top: 16, right: 18, pointerEvents: "none", zIndex: 2,
+            display: "flex", alignItems: "center", gap: 8,
+            background: "rgba(0,0,0,0.45)", padding: "5px 12px", borderRadius: "var(--r-pill)", backdropFilter: "blur(6px)",
+          }}
+        >
+          <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 14, letterSpacing: "0.08em", color: "rgba(255,255,255,0.9)" }}>
             MEGA<span style={{ color: "var(--red)" }}>TV</span>
           </span>
         </div>
+      </div>
 
-        {/* play button */}
-        <button
-          onClick={() => setPlaying((p) => !p)}
-          aria-label="Reproducir Mega TV"
-          style={{
-            position: "absolute", inset: 0, margin: "auto", width: 96, height: 96, borderRadius: "50%",
-            border: "none", cursor: "pointer", background: "linear-gradient(180deg, var(--red-bright), var(--red))",
-            color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
-            boxShadow: "var(--glow-red), 0 10px 40px rgba(0,0,0,0.5)", transition: "transform var(--dur)",
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.08)")}
-          onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
-        >
-          <Icon name={playing ? "pause" : "play"} size={38} strokeWidth={2.2} style={{ marginLeft: playing ? 0 : 5 }} />
-        </button>
-
-        {/* bottom now-on bar */}
-        <div
-          style={{
-            position: "absolute", left: 0, right: 0, bottom: 0, padding: "40px 24px 18px",
-            background: "linear-gradient(to top, rgba(0,0,0,0.8), transparent)",
-            display: "flex", alignItems: "flex-end", justifyContent: "space-between",
-          }}
-        >
+      {/* now-on-air strip (real program from the live state) + follow links */}
+      <div
+        className="reveal"
+        style={{
+          marginTop: 22, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 16, justifyContent: "space-between",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <span style={{ width: 9, height: 9, borderRadius: "50%", background: "var(--red-bright)", boxShadow: "0 0 10px var(--red-bright)", animation: "pulse-dot 1.3s infinite" }} />
           <div>
-            <div className="mono" style={{ fontSize: 11, letterSpacing: "0.2em", color: "var(--red-bright)", marginBottom: 4 }}>
-              AHORA EN CABINA
-            </div>
-            <div className="display" style={{ fontSize: 22, color: "#fff" }}>{nowOn}</div>
-          </div>
-          <div style={{ display: "flex", gap: 14, alignItems: "center", color: "rgba(255,255,255,0.7)" }}>
-            <Icon name="volume-2" size={20} />
-            <Icon name="maximize" size={20} />
+            <div className="mono" style={{ fontSize: 11, letterSpacing: "0.2em", color: "var(--red-bright)" }}>AHORA EN CABINA</div>
+            <div className="display" style={{ fontSize: 18, color: "#fff" }}>{nowOn ?? "Programación La Mega 99.9"}</div>
           </div>
         </div>
       </div>
 
       {/* follow elsewhere */}
-      <div className="reveal" style={{ marginTop: 36, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 14, justifyContent: "center" }}>
-        <span style={{ color: "var(--fg-3)", fontWeight: 600, marginRight: 4 }}>Síguenos también en:</span>
+      <div className="reveal" style={{ marginTop: 28, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 14, justifyContent: "center" }}>
+        <span style={{ color: "var(--fg-3)", fontWeight: 600, marginRight: 4 }}>Síguenos también en vivo en:</span>
         <LivePill name="Facebook Live" color={fb.color} icon={fb.path} href={fb.url} />
         <LivePill name="TikTok Live" color="#25F4EE" icon={tt.path} href={tt.url} />
         <LivePill name="YouTube Live" color={yt.color} icon={yt.path} href={yt.url} />
