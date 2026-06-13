@@ -1,249 +1,166 @@
 # Guía de despliegue — La Mega 99.9 FM
 
-## Opciones de hosting
+El sitio corre en **FastComet** (hosting compartido cPanel) con **Phusion Passenger**,
+Node.js 22 y MySQL. El build de Next.js se hace en modo **standalone** (`output: "standalone"`
+en `next.config.mjs`) y se despliega como un bundle autocontenido.
 
-| Opción | SSE persistente | Costo | Recomendado para |
-|---|---|---|---|
-| **Railway / Render / Fly.io** | ✅ Sí | Desde $5/mes | Producción principal |
-| **FastComet (cPanel + Node.js)** | ✅ Sí | Ya contratado | Producción actual |
-| **Vercel** | ⚠️ Limitado | Gratis / $20 | Solo si no se usa SSE en tiempo real |
-| **VPS propio** | ✅ Sí | Variable | Control total |
-
-> **Nota sobre SSE:** El bus de eventos en memoria (`lib/events.ts`) requiere un proceso Node.js persistente. En Vercel serverless, cada petición puede ejecutarse en una instancia diferente, por lo que los eventos de la app Python pueden no llegar a todos los navegadores. Para tiempo real completo, usa un host con servidor Node persistente.
+> **Importante:** el build se hace **localmente** (`npm run build` en tu Mac), no en el servidor.
+> El servidor compartido no tiene recursos para compilar (SWC/rayon).
 
 ---
 
-## Railway (recomendado)
-
-### 1. Preparar el repo
-
-```bash
-# Asegúrate de que el build pasa limpio
-npm run build
-```
-
-### 2. Crear el proyecto en Railway
-
-1. Ir a [railway.app](https://railway.app) → New Project → Deploy from GitHub
-2. Seleccionar `xtmultimedia/lamega-web`
-3. Railway detecta automáticamente Next.js
-
-### 3. Base de datos PostgreSQL
-
-En Railway: Add → Database → PostgreSQL  
-Railway inyecta `DATABASE_URL` automáticamente.
-
-Actualiza `prisma/schema.prisma`:
-```prisma
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-```
-
-### 4. Variables de entorno (Railway → Variables)
+## Arquitectura de runtime en el servidor
 
 ```
-NEXT_PUBLIC_STREAM_URL=https://usa3.fastcast4u.com/proxy/lamega?mp=/stream
-STREAM_URL=https://usa3.fastcast4u.com/proxy/lamega?mp=/stream
-RADIO_API_KEY=<genera con: openssl rand -hex 32>
-ADMIN_USER=admin
-ADMIN_PASSWORD=<contraseña segura>
-EMAIL_FROM=noreply@lamegaecuador.com
-EMAIL_TO_COMERCIAL=comercial@lamegaecuador.com
-RESEND_API_KEY=<tu key de resend.com>
-NEXTAUTH_SECRET=<openssl rand -hex 32>
-NEXTAUTH_URL=https://tu-proyecto.up.railway.app
+~/lamegaecuador.com/
+  app.js                         ← entry point de Passenger (wrapper)
+  .htaccess                      ← directivas CloudLinux Passenger (NO reglas WordPress)
+  .env                           ← variables de prod (mysql://, RADIO_API_KEY, etc.)
+  .next/standalone/
+    server.js                    ← servidor Next.js standalone (lo invoca app.js)
+    .env                         ← copia de .env que el server lee en runtime
+    .next/static/                ← assets cliente (copiados manualmente)
+    public/                      ← assets públicos (copiados manualmente)
+    node_modules/                ← deps mínimas + mysql2 (traceadas por el build)
+  tmp/restart.txt                ← tocar este archivo reinicia Passenger
 ```
 
-### 5. Primer deploy
+- **`app.js`** (en la raíz): `process.chdir(__dirname); require('./.next/standalone/server.js')`
+- **Passenger** lo maneja vía **Application Manager** de cPanel (NO el "Setup Node.js App" /
+  Node.js Selector — su URL devuelve 404 en este servidor).
+- **Node.js** está en el virtualenv de CloudLinux: `/home/producci/nodevenv/lamegaecuador.com/22/bin/node`.
 
-```bash
-git push origin main  # Railway hace deploy automático
+### `.htaccess` (bloque CloudLinux Passenger)
+
+El `.htaccess` de la raíz **debe** ser exactamente esto (cualquier regla de WordPress ahí
+manda todo a `index.php` → 404):
+
+```apache
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION BEGIN
+PassengerAppRoot "/home/producci/lamegaecuador.com"
+PassengerBaseURI "/"
+PassengerNodejs "/home/producci/nodevenv/lamegaecuador.com/22/bin/node"
+PassengerAppType node
+PassengerStartupFile app.js
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION END
 ```
 
-Luego en Railway Shell o en el build command:
-```bash
-npx prisma db push
-```
-
-### 6. Dominio personalizado
-
-Railway → Settings → Networking → Custom Domain → `lamegaecuador.com`
+Sin `PassengerAppRoot` + `PassengerBaseURI`, LiteSpeed sirve estáticos → 404.
 
 ---
 
-## FastComet (cPanel + Node.js Passenger)
+## Capa de datos: mysql2 (no Prisma en runtime)
 
-FastComet usa **Phusion Passenger** para ejecutar apps Node.js bajo Apache/Nginx. El proceso es persistente — SSE funciona correctamente.
+La app **no usa el query engine de Prisma** (no corre en este hosting). `lib/prisma.ts` es un
+shim sobre **mysql2** con API compatible con Prisma. `next.config.mjs` incluye
+`serverComponentsExternalPackages: ["mysql2"]` para que el tracer del standalone copie mysql2
+y su árbol de dependencias al bundle.
 
-### 1. Preparar el build localmente
+- La base de datos es **MySQL** (`producci_lamega` en cPanel → MySQL Databases).
+- El schema (`prisma/schema.prisma`) es la fuente de verdad de tablas/columnas. Para crear las
+  tablas la primera vez, apuntá `DATABASE_URL` a la MySQL de FastComet y corré `npx prisma db push`
+  (o creálas a mano). La columna `StationState.tvLive` se agrega sola al arrancar (migración
+  idempotente en `lib/prisma.ts`).
+- `DATABASE_URL` usa `mysql://user:pass@localhost:3306/db`. El shim mapea `localhost` → `127.0.0.1`
+  para evitar que resuelva a IPv6 (donde MySQL no escucha).
 
-```bash
-npm run build
-```
+---
 
-### 2. Subir los archivos
+## Procedimiento de re-deploy (el que se usa)
 
-Sube **todo el proyecto** excepto `node_modules/` y `prisma/dev.db`:
-
-```
-.next/          (build output)
-app/
-components/
-lib/
-prisma/
-public/
-package.json
-package-lock.json
-next.config.mjs
-tsconfig.json
-```
-
-Puedes usar el File Manager de cPanel o rsync/SFTP:
+### 1. Build local
 
 ```bash
-rsync -avz --exclude='node_modules' --exclude='prisma/dev.db' \
-  ./ usuario@servidor.fastcomet.com:~/lamegaecuador.com/
+npm run build          # next build, salida en .next/standalone
 ```
 
-### 3. Crear el entry point para Passenger
-
-Crea `server.js` en la raíz del proyecto:
-
-```javascript
-const { createServer } = require("http");
-const { parse } = require("url");
-const next = require("next");
-
-const dev = process.env.NODE_ENV !== "production";
-const app = next({ dev });
-const handle = app.getRequestHandler();
-
-app.prepare().then(() => {
-  createServer((req, res) => {
-    const parsedUrl = parse(req.url, true);
-    handle(req, res, parsedUrl);
-  }).listen(process.env.PORT || 3000, (err) => {
-    if (err) throw err;
-    console.log("> La Mega web lista en puerto", process.env.PORT || 3000);
-  });
-});
-```
-
-### 4. Configurar la app Node.js en cPanel
-
-1. cPanel → **Setup Node.js App**
-2. Crear nueva aplicación:
-   - **Node.js version:** 18.x o 20.x
-   - **Application mode:** Production
-   - **Application root:** `/home/usuario/lamegaecuador.com`
-   - **Application URL:** `lamegaecuador.com`
-   - **Application startup file:** `server.js`
-3. Guardar → **Run NPM Install**
-
-### 5. Variables de entorno
-
-En cPanel → Node.js App → Edit → Environment Variables:
-
-```
-NODE_ENV=production
-NEXT_PUBLIC_STREAM_URL=https://usa3.fastcast4u.com/proxy/lamega?mp=/stream
-STREAM_URL=https://usa3.fastcast4u.com/proxy/lamega?mp=/stream
-RADIO_API_KEY=...
-DATABASE_URL=mysql://usuario:pass@localhost/lamega_db
-ADMIN_USER=admin
-ADMIN_PASSWORD=...
-EMAIL_FROM=noreply@lamegaecuador.com
-EMAIL_TO_COMERCIAL=comercial@lamegaecuador.com
-RESEND_API_KEY=...
-NEXTAUTH_SECRET=...
-NEXTAUTH_URL=https://lamegaecuador.com
-```
-
-### 6. Base de datos en FastComet
-
-FastComet ofrece MySQL. Actualiza `prisma/schema.prisma`:
-
-```prisma
-datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
-}
-```
-
-Crea la base de datos en cPanel → MySQL Databases, luego:
+### 2. Ensamblar el standalone (Next no copia estos solo)
 
 ```bash
-npx prisma db push
+cp -r .next/static  .next/standalone/.next/static
+cp -r public        .next/standalone/public
 ```
 
-### 7. Inicializar la base de datos
+### 3. Empaquetar (excluyendo el .env para NO pisar el de producción)
 
-En la terminal SSH de FastComet:
+```bash
+tar -czf /tmp/lamega.tar.gz --exclude='.env' --exclude='._*' -C .next standalone
+```
+
+### 4. Subir por FTP
+
+```bash
+curl --user "ftpupload@lamegaecuador.com:<pass>" \
+  -T /tmp/lamega.tar.gz \
+  "ftp://ftp.produccionesmega.com/lamega.tar.gz"
+```
+
+(FTP server: `ftp.produccionesmega.com` · home = `/home/producci/lamegaecuador.com/`.)
+
+### 5. Extraer + reiniciar (cPanel → Terminal)
 
 ```bash
 cd ~/lamegaecuador.com
-npm install --production
-npx prisma generate
-npx prisma db push
+tar -xzf lamega.tar.gz -C .next      # extrae sobre standalone; preserva .env (no está en el tar)
+rm -f lamega.tar.gz
+touch tmp/restart.txt                # reinicia Passenger en la próxima petición
 ```
 
-### 8. Reiniciar la app
+### 6. Habilitar / verificar
 
-cPanel → Node.js App → Restart.
+- cPanel → **Application Manager** → "La Mega Ecuador" debe estar **Enabled**.
+- Verificar: `curl -s -o /dev/null -w "%{http_code}\n" https://lamegaecuador.com` → `200`.
+- DB: `curl https://lamegaecuador.com/api/station` → `200` con JSON real.
 
 ---
 
-## Vercel
+## ⚠️ Cuidado: NO reiniciar el app en exceso
 
-> ⚠️ **Advertencia SSE:** En Vercel Edge/Serverless, el bus de eventos en memoria no se comparte entre instancias. Los eventos de la app Python pueden no propagarse a todos los clientes. Úsalo solo si la actualización en tiempo real no es crítica o si implementas un pub/sub externo (Redis, Pusher, Ably).
+Este hosting tiene límites por cuenta bajos. Reiniciar/redesplegar muchas veces seguidas en una
+sesión **acumula recursos zombie**:
 
-### Deploy básico
+- **Procesos (NPROC = 80):** cada reinicio fallido deja procesos node colgados → `cagefs_enter:
+  Unable to fork` (la terminal y el panel dejan de funcionar).
+- **Conexiones MySQL (`max_user_connections`):** cada reinicio deja conexiones "dormidas" →
+  `ER_TOO_MANY_USER_CONNECTIONS` y la DB se cae para todo el sitio.
 
-1. Importar repo en [vercel.com](https://vercel.com)
-2. Framework preset: **Next.js** (autodetectado)
-3. Definir todas las variables de entorno
-4. PostgreSQL: usa Vercel Postgres, Neon o Supabase en `DATABASE_URL`
-5. Actualizar `prisma/schema.prisma` a `provider = "postgresql"`
-6. Build command (ya en `package.json`): `prisma generate && next build`
+Mitigación ya en el código: pool mysql2 chico (`connectionLimit: 3, maxIdle: 1, idleTimeout: 30s`).
+**Aun así:** agrupá cambios, desplegá una sola vez, y evitá toggear el app repetidamente. Si la
+cuenta se traba, **soporte de FastComet (live chat)** puede matar los procesos/conexiones colgados
+(lo hacen rápido).
 
 ---
 
-## Actualizaciones en producción
+## Endpoints de la app de automatización (Python)
 
-```bash
-# Local: hacer los cambios, commit y push
-git add -A && git commit -m "descripción del cambio"
-git push origin main
+La app Python empuja estado vía `/api/radio/*` con el header `X-Radio-API-Key`. Incluye, además
+de now-playing/programa/stats/emergency:
 
-# Railway / Render: deploy automático en cada push a main
+- `POST /api/radio/tv {"live": true|false}` — muestra/oculta la sección **Mega TV** según la señal
+  (llamar `true` al iniciar la transmisión en OneStream, `false` al detenerla).
 
-# FastComet: rsync + reiniciar en cPanel
-rsync -avz --exclude='node_modules' --exclude='prisma/dev.db' \
-  ./ usuario@servidor:~/lamegaecuador.com/
-# Luego en cPanel → Node.js App → Restart
-```
+Ver [API.md](API.md) y `radio_client_example.py`.
 
-Si hay cambios en el schema de Prisma:
+---
 
-```bash
-npx prisma db push  # dev/staging
-npx prisma migrate deploy  # producción (con migraciones)
-```
+## Otros hosts (si algún día se migra)
+
+Cualquier host con **Node.js persistente** (Railway, Render, Fly.io, un VPS) sirve — el bus SSE
+en memoria (`lib/events.ts`) necesita un solo proceso Node. En esos hosts no hay el problema de
+Prisma (se podría volver a Prisma si el plan lo permite). **Vercel/serverless no es ideal**: el bus
+SSE no se comparte entre instancias.
 
 ---
 
 ## Checklist de despliegue
 
-- [ ] `npm run build` pasa sin errores
-- [ ] Variables de entorno configuradas (todas las de `.env.example`)
-- [ ] `NEXTAUTH_SECRET` generado con `openssl rand -hex 32`
-- [ ] `NEXTAUTH_URL` apunta a la URL pública real (con `https://`)
-- [ ] Base de datos inicializada con `npx prisma db push`
-- [ ] Login en `/admin/login` funciona con las credenciales del `.env`
-- [ ] Player de audio carga y reproduce el stream
-- [ ] Now playing se actualiza automáticamente cada 15 s
-- [ ] Formulario `/pide` envía y crea registros en la DB
-- [ ] SSE: abrir `/api/radio/events` en el navegador devuelve `event: snapshot`
-- [ ] App Python conecta y el dashboard refleja los cambios en tiempo real
+- [ ] `npm run build` pasa sin errores (salida `standalone`)
+- [ ] `.next/static` y `public` copiados dentro de `.next/standalone/`
+- [ ] Tarball creado **excluyendo `.env`**
+- [ ] Extraído en el servidor; `.env` de prod intacto (`grep DATABASE_URL` → `mysql://`)
+- [ ] `tmp/restart.txt` tocado y app **Enabled** en Application Manager
+- [ ] `https://lamegaecuador.com` → 200 · `/api/station` → 200 con datos
+- [ ] `/api/radio/events` devuelve `event: snapshot` con `tv_live`
+- [ ] Login en `/admin/login` funciona
+- [ ] Now playing se actualiza (metadatos ICY cada 15 s)
+- [ ] Formulario `/pide` crea registros en la DB

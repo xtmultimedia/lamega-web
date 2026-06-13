@@ -4,7 +4,8 @@ Aplicación web de producción para **La Mega 99.9 FM**, la radio líder de Imba
 
 - **Frontend:** Next.js 14 (App Router, TypeScript) + diseño dark-stage glassmorphism (Saira / Sora / Space Mono)
 - **Tiempo real:** Server-Sent Events (`/api/radio/events`) + lectura automática de metadatos ICY del stream
-- **Base de datos:** Prisma ORM — SQLite en dev, PostgreSQL en producción
+- **Base de datos:** MySQL, accedida vía un cliente liviano **mysql2** (`lib/prisma.ts` — shim con API compatible con Prisma; ver nota abajo)
+- **Mega TV:** player de video en vivo embebido de **OneStream Live** (Universal Embed Player), con auto mostrar/ocultar según la señal
 - **Auth:** NextAuth.js (credenciales desde `.env`) para `/admin`
 - **Email:** Resend (notificación al equipo comercial)
 - **API:** endpoints `/api/radio/*` para la app de automatización Python
@@ -27,9 +28,14 @@ git clone https://github.com/xtmultimedia/lamega-web.git
 cd lamega-web
 npm install
 cp .env.example .env          # edita los valores (ver tabla abajo)
-npm run setup                 # prisma generate + db push
 npm run dev                   # http://localhost:3000
 ```
+
+> **Base de datos en desarrollo:** la app habla con MySQL vía `mysql2`, así que para que funcionen las
+> rutas que tocan la DB necesitas una instancia MySQL local y `DATABASE_URL=mysql://user:pass@127.0.0.1:3306/db`.
+> El frontend (landing, `/pide`) renderiza sin DB. La tabla `StationState` agrega su columna `tvLive`
+> automáticamente al arrancar (migración idempotente en `lib/prisma.ts`); el resto de tablas se crean
+> según `prisma/schema.prisma` (puedes generarlas con `npx prisma db push` apuntando a tu MySQL).
 
 Credenciales del dashboard (dev): `ADMIN_USER` / `ADMIN_PASSWORD` del `.env`.
 
@@ -40,7 +46,7 @@ Credenciales del dashboard (dev): `ADMIN_USER` / `ADMIN_PASSWORD` del `.env`.
 | `STREAM_URL` | URL del stream (server-side, para leer metadatos ICY) | `https://usa3.fastcast4u.com/proxy/lamega?mp=/stream` |
 | `NEXT_PUBLIC_STREAM_URL` | URL del stream (browser, para el player de audio) | igual que arriba |
 | `RADIO_API_KEY` | Clave del header `X-Radio-API-Key` para la app Python | cadena aleatoria segura |
-| `DATABASE_URL` | SQLite en dev, PostgreSQL en prod | `file:./dev.db` |
+| `DATABASE_URL` | Conexión MySQL (dev y prod) | `mysql://user:pass@127.0.0.1:3306/db` |
 | `ADMIN_USER` / `ADMIN_PASSWORD` | Credenciales del dashboard | `admin` / `…` |
 | `EMAIL_FROM` | Remitente de emails | `noreply@lamegaecuador.com` |
 | `EMAIL_TO_COMERCIAL` | Destinatario de leads comerciales | `comercial@lamegaecuador.com` |
@@ -53,10 +59,10 @@ Credenciales del dashboard (dev): `ADMIN_USER` / `ADMIN_PASSWORD` del `.env`.
 | Comando | Acción |
 |---|---|
 | `npm run dev` | Servidor de desarrollo (localhost:3000) |
-| `npm run build` | Build de producción |
+| `npm run build` | Build de producción (`next build`, salida `standalone`) |
 | `npm start` | Servidor de producción (tras build) |
-| `npm run setup` | `prisma generate` + `prisma db push` |
-| `npm run db:studio` | Prisma Studio para ver/editar datos |
+| `npm run setup` | `prisma db push` — crea las tablas en tu MySQL desde el schema |
+| `npm run db:studio` | Prisma Studio para ver/editar datos (solo lectura del schema) |
 
 ## Conectar la app Python
 
@@ -91,27 +97,35 @@ Browser ──SSE──► /api/radio/events ◄── Python app (push)
                   EventEmitter (lib/events.ts)
                        │
          ┌─────────────┴──────────────┐
-     Prisma DB              ICY metadata poller
-  (SQLite / PG)          /api/nowplaying (15s)
+   MySQL (mysql2)          ICY metadata poller
+  lib/prisma.ts shim     /api/nowplaying (15s)
                         usa3.fastcast4u.com
 ```
 
 Ver [ARCHITECTURE.md](ARCHITECTURE.md) para el diagrama completo del sistema.
 
-## Cambiar a PostgreSQL (producción)
+## Capa de datos (mysql2, no Prisma en runtime)
 
-1. En `prisma/schema.prisma` cambia `provider = "sqlite"` por `"postgresql"`.
-2. Pon la URL en `DATABASE_URL`.
-3. `npx prisma db push` (o `prisma migrate deploy`).
+`lib/prisma.ts` **no usa el cliente de Prisma en runtime**. Es un shim respaldado por
+**mysql2** que expone una API compatible con Prisma (`findUnique`, `findMany`, `count`,
+`create`, `createMany`, `update`, `upsert`, `deleteMany`, `$transaction`), así que los
+call sites (`prisma.modelo.metodo(...)`) no cambian.
 
-El schema no usa funciones exclusivas de SQLite — el cambio es directo.
+**¿Por qué?** El query engine de Prisma (tanto `library` como `binary`) no corre en el
+hosting compartido de FastComet: el engine `library` hace panic del runtime Tokio
+("timer has gone away") y el `binary` satura el límite de procesos (NPROC) de la cuenta.
+mysql2 es un pool de conexiones puro — sin proceso engine aparte, pocos threads — y corre
+bien dentro de los límites del plan. `prisma/schema.prisma` se conserva solo como fuente de
+verdad de tablas/columnas (mapeo directo: nombre de modelo = tabla, campo = columna).
 
 ## Despliegue
 
-Ver [DEPLOYMENT.md](DEPLOYMENT.md) para guías detalladas de:
-- **FastComet** (hosting actual con cPanel + Node.js Passenger)
-- **Railway / Render / Fly.io** (recomendado para SSE persistente)
-- **Vercel** (con nota importante sobre SSE en serverless)
+Hosting actual: **FastComet** (cPanel + Phusion Passenger, Node.js 22, MySQL).
+El build se hace localmente (`npm run build`, salida `standalone`), se empaqueta y se sube
+por FTP/terminal, y se reinicia el app en *Application Manager*.
+
+Ver [DEPLOYMENT.md](DEPLOYMENT.md) para el procedimiento detallado de FastComet (el real)
+y notas para otros hosts Node persistentes (Railway/Render/Fly) si algún día se migra.
 
 ## Estructura del proyecto
 
@@ -133,13 +147,14 @@ components/
   ui.tsx            Primitivas de diseño (Icon, Section, Bloom, etc.)
   data.ts           Datos estáticos de fallback
 lib/
-  prisma.ts         Singleton del cliente Prisma
+  prisma.ts         Capa de datos mysql2 (shim con API compatible con Prisma)
   events.ts         Bus SSE en memoria (globalThis)
   radio-auth.ts     Middleware de autenticación por API key
   auth.ts           Opciones de NextAuth
   station.ts        Seed de datos reales de la estación
+  radio-state.ts    Snapshot de estado en vivo (now-playing, programa, stats, tv_live)
 prisma/
-  schema.prisma     Modelos: SongRequest, AdCampaign, NowPlaying, etc.
+  schema.prisma     Fuente de verdad de tablas/columnas (no se usa el engine en runtime)
 public/assets/      Logo y assets estáticos
 radio_client_example.py  Cliente Python 3 de ejemplo
 ```

@@ -13,9 +13,13 @@ git clone https://github.com/xtmultimedia/lamega-web.git
 cd lamega-web
 npm install
 cp .env.example .env    # editar con valores de desarrollo
-npm run setup           # crea la base de datos SQLite
 npm run dev             # http://localhost:3000
 ```
+
+> **Base de datos:** la app usa **MySQL** vía `mysql2` (`lib/prisma.ts`). Para que funcionen las
+> rutas con DB, levantá un MySQL local y poné `DATABASE_URL=mysql://user:pass@127.0.0.1:3306/db`,
+> luego `npm run setup` (`prisma db push`) para crear las tablas. El frontend (landing, `/pide`)
+> renderiza sin DB. Nota: ya **no** se usa SQLite — el shim de mysql2 no se conecta a `file:`.
 
 Credenciales del dashboard (dev): `admin` / `lamega999` (los del `.env.example`).
 
@@ -78,21 +82,24 @@ Los datos de programación, locutores y playlists se gestionan en dos lugares:
 
 Si cambias programas o locutores:
 1. Edita ambos archivos
-2. Si hay cambios en el schema de Prisma, ejecuta `npm run setup`
-3. Para resetear la DB de dev: `rm prisma/dev.db && npm run setup`
+2. Si hay cambios de tablas/columnas, aplicá el schema a tu MySQL con `npm run setup` (`prisma db push`)
 
-## Cambios en el schema de Prisma
+## Cambios en el schema (tablas/columnas)
+
+El runtime es **mysql2**, no Prisma. `prisma/schema.prisma` se mantiene como fuente de verdad.
 
 ```bash
-# Editar prisma/schema.prisma
-# Aplicar en dev (SQLite):
+# Editar prisma/schema.prisma, luego aplicar a tu MySQL (dev o prod):
 npx prisma db push
-
-# Generar cliente actualizado:
-npx prisma generate
 ```
 
-No uses `prisma migrate dev` en desarrollo a menos que necesites un historial de migraciones. En producción con PostgreSQL, sí se recomienda `prisma migrate deploy`.
+- El shim de `lib/prisma.ts` mapea **nombre de modelo → tabla** y **campo → columna** tal cual
+  (sin `@@map`). Si agregás una columna que el shim debe escribir, asegurate de que exista en la
+  tabla (db push, o una migración).
+- En **producción** (FastComet) no se puede correr `prisma db push` apuntando a la MySQL del
+  servidor desde tu máquina (no es accesible). Para un cambio de columna puntual, agregá una
+  migración idempotente en el arranque del pool (`lib/prisma.ts`) como se hizo con `tvLive`, o
+  pedí a soporte / usá la terminal del servidor.
 
 ## Añadir una nueva sección a la landing
 
@@ -133,6 +140,5 @@ npm run db:studio  # abre Prisma Studio en el navegador
 ```
 
 **¿Cómo reseteo la base de datos?**  
-```bash
-rm prisma/dev.db && npm run setup
-```
+Borra/recrea el schema en tu MySQL local (ej. `DROP DATABASE` + `CREATE DATABASE`) y volvé a
+correr `npm run setup` (`prisma db push`). Ya no hay archivo SQLite que borrar.

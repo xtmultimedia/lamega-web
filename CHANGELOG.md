@@ -6,6 +6,25 @@ Versiones siguiendo [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.2.0] — 2026-06-12
+
+### Añadido
+- **Mega TV en vivo**: la sección Mega TV ahora embebe el **Universal Embed Player de OneStream Live** (iframe responsive 16:9 dentro del marco de marca), reemplazando el reproductor decorativo/falso. Muestra el poster offline cuando no se transmite y se conecta automáticamente al entrar en vivo. Poster offline personalizado con la identidad de La Mega.
+- **Auto mostrar/ocultar Mega TV**: nuevo endpoint `POST /api/radio/tv {"live": bool}` (header `X-Radio-API-Key`). La app de automatización lo llama con `true` al iniciar la transmisión en OneStream y `false` al detenerla. La web muestra la sección Mega TV (y el enlace "MEGA TV" del nav) solo mientras está en vivo. Estado en `StationState.tvLive`, evento SSE `tv_status`, incluido en el `snapshot`. Documentado en `API.md` y `radio_client_example.py` (`set_tv_live`).
+
+### Cambiado
+- **Base de datos → MySQL**: la app ahora usa **MySQL** en producción (FastComet), no SQLite/PostgreSQL.
+- **Capa de datos → mysql2**: `lib/prisma.ts` dejó de usar el query engine de Prisma y pasó a ser un **shim respaldado por mysql2** con API compatible con Prisma (`findUnique`, `findMany`, `count`, `create`, `createMany`, `update`, `upsert`, `deleteMany`, `$transaction`). Los call sites no cambiaron. Motivo: el engine de Prisma (library y binary) no corre en el hosting compartido de FastComet (panic del runtime Tokio / fork-bomb del límite NPROC). `prisma/schema.prisma` queda como fuente de verdad de tablas/columnas.
+- **Build/deploy → standalone en FastComet**: `next.config.mjs` con `output: "standalone"` + `serverComponentsExternalPackages: ["mysql2"]`; despliegue como bundle autocontenido vía Phusion Passenger (Application Manager). Ver [DEPLOYMENT.md](DEPLOYMENT.md).
+
+### Técnico
+- `next.config.mjs`: `serverComponentsExternalPackages: ["mysql2"]` para que el tracer del standalone copie mysql2 y sus deps.
+- `lib/prisma.ts`: pool mysql2 chico (`connectionLimit: 3`, `maxIdle: 1`, `idleTimeout: 30s`); `TINYINT(1)`→boolean vía `typeCast`; ids uuid con `randomUUID()`; `localhost`→`127.0.0.1`; migración idempotente en arranque que agrega `StationState.tvLive`.
+- `package.json`: el `build` ya no corre `prisma generate` (no se usa el cliente en runtime).
+- `RadioProvider`/`MegaTV`/`Nav`: consumo de `tv_live` desde el snapshot + evento `tv_status`.
+
+---
+
 ## [1.1.0] — 2026-06-11
 
 ### Añadido

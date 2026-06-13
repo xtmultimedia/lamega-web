@@ -40,7 +40,7 @@
 ┌──────────────────┐   ┌──────────────────────────────────────────┐
 │   lib/events.ts  │   │              lib/prisma.ts               │
 │                  │   │                                          │
-│  EventEmitter    │   │  Prisma ORM (SQLite dev / PostgreSQL prod)│
+│  EventEmitter    │   │  Capa de datos mysql2 (shim Prisma-like) │
 │  globalThis bus  │   │                                          │
 │                  │   │  SongRequest    AdCampaign               │
 │  emit()          │   │  NowPlaying     CurrentProgram           │
@@ -85,7 +85,7 @@
              Sí          No
               │           │
   ┌───────────▼──────┐   └──► devuelve caché
-  │  Prisma upsert   │
+  │  mysql2 upsert   │
   │  NowPlaying id=1 │
   └───────────┬──────┘
               │
@@ -206,7 +206,8 @@ Para soportar mayor carga o equipos más grandes, los cambios recomendados son:
 
 1. **Redis Pub/Sub** en lugar del bus en memoria → permite múltiples instancias Node.js
 2. **NextAuth con base de datos** → soporta múltiples usuarios admin con roles
-3. **Migraciones Prisma** (`prisma migrate dev`) en lugar de `db push` → historial de schema en git
+3. **Migraciones SQL versionadas** (carpeta `migrations/` + un runner) en lugar de la migración
+   idempotente en arranque → historial de schema en git. (Hoy el runtime es mysql2, no Prisma.)
 4. **CDN para assets** (Cloudflare, CloudFront) → imágenes de locutores, logos
 5. **Monitoreo** (Sentry para errores, Grafana/Datadog para métricas del stream)
 6. **Rate limiting** en `/api/requests` y `/api/campaigns` → evitar spam de formularios
