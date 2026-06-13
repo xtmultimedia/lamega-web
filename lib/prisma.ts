@@ -28,7 +28,11 @@ function makePool(): Pool {
     user: decodeURIComponent(url.username),
     password: decodeURIComponent(url.password),
     database: url.pathname.replace(/^\//, ""),
-    connectionLimit: 5,
+    // Keep a small footprint: shared-host MySQL caps max_user_connections low,
+    // and release idle connections so restarts don't pile up sleeping ones.
+    connectionLimit: 3,
+    maxIdle: 1,
+    idleTimeout: 30_000,
     waitForConnections: true,
     timezone: "Z", // Prisma stores DATETIME in UTC
     // TINYINT(1) → boolean, to match Prisma's Bool fields.
@@ -43,7 +47,15 @@ function makePool(): Pool {
 }
 
 function pool(): Pool {
-  if (!globalForDb.__megaPool) globalForDb.__megaPool = makePool();
+  if (!globalForDb.__megaPool) {
+    const p = makePool();
+    globalForDb.__megaPool = p;
+    // One-time idempotent migration, run via the app's own (working) connection.
+    // The tvLive column was added after the initial deploy, and external clients
+    // can't reach the DB when the user is at its max_user_connections limit.
+    p.query("ALTER TABLE StationState ADD COLUMN tvLive TINYINT(1) NOT NULL DEFAULT 0")
+      .catch(() => {}); // ignore "duplicate column" once it exists
+  }
   return globalForDb.__megaPool;
 }
 

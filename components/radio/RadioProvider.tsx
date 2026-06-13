@@ -64,6 +64,8 @@ interface RadioCtxValue {
   emergency: EmergencyInfo;
   config: StationConfigInfo;
   queueCount: number | null;
+  // Mega TV on-air flag (pushed by the automation app) — drives section visibility
+  tvLive: boolean;
   // player
   playing: boolean;
   loading: boolean;
@@ -101,6 +103,7 @@ export function RadioProvider({ children }: { children: React.ReactNode }) {
   const [emergency, setEmergency] = useState<EmergencyInfo>({ active: false });
   const [config, setConfig] = useState<StationConfigInfo>(DEFAULT_CONFIG);
   const [queueCount, setQueueCount] = useState<number | null>(null);
+  const [tvLive, setTvLive] = useState(false);
 
   const [playing, setPlaying] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -227,6 +230,7 @@ export function RadioProvider({ children }: { children: React.ReactNode }) {
         }
         if (d.emergency) setEmergency(d.emergency);
         if (d.config) setConfig(d.config);
+        if (typeof d.tv_live === "boolean") setTvLive(d.tv_live);
       });
       on("config_update", (d) => setConfig(d));
       on("now_playing_update", (d) => setNowPlaying(d));
@@ -236,6 +240,7 @@ export function RadioProvider({ children }: { children: React.ReactNode }) {
       );
       on("queue_update", (d) => setQueueCount(d.count));
       on("emergency", (d) => setEmergency(d));
+      on("tv_status", (d) => setTvLive(!!d.live));
       on("new_request", () => {});
 
       es.onerror = () => {
@@ -284,6 +289,7 @@ export function RadioProvider({ children }: { children: React.ReactNode }) {
         emergency,
         config,
         queueCount,
+        tvLive,
         playing,
         loading,
         toggle,

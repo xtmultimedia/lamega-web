@@ -70,6 +70,7 @@ export async function getSnapshot() {
       active: state?.emergencyActive ?? false,
       message: state?.emergencyMessage ?? null,
     },
+    tv_live: state?.tvLive ?? false,
     config: {
       frequency: config?.frequency ?? "99.9 FM",
       city: config?.city ?? "Guayaquil",

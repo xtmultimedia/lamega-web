@@ -39,9 +39,13 @@ function LivePill({ name, color, icon, href }: { name: string; color: string; ic
 }
 
 export function MegaTV() {
-  const { program } = useRadio();
+  const { program, tvLive } = useRadio();
   const fb = SOCIAL.facebook, tt = SOCIAL.tiktok, yt = SOCIAL.youtube;
   const nowOn = program ? `${program.program_name} · ${program.host}` : null;
+
+  // Auto hide/show: the automation app pushes tv_live (POST /api/radio/tv).
+  // Render nothing while off air so the whole Mega TV section disappears.
+  if (!tvLive) return null;
 
   return (
     <Section id="megatv" style={{ background: "var(--bg-1)", borderTop: "1px solid var(--line-1)", borderBottom: "1px solid var(--line-1)" }}>

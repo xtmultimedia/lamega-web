@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Icon, OnAir, SocialIcon } from "@/components/ui";
 import { NAV_LINKS } from "@/components/data";
 import { INTRO_EVENT } from "@/components/landing/Intro";
+import { useRadio } from "@/components/radio/RadioProvider";
 
 // "INICIO" replays the tuner intro
 const replayIntro = () => window.dispatchEvent(new Event(INTRO_EVENT));
@@ -11,6 +12,9 @@ const replayIntro = () => window.dispatchEvent(new Event(INTRO_EVENT));
 export function Nav() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const { tvLive } = useRadio();
+  // Drop the "MEGA TV" link while the section is hidden (off air)
+  const links = tvLive ? NAV_LINKS : NAV_LINKS.filter((l) => l.href !== "#megatv");
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -60,7 +64,7 @@ export function Nav() {
 
         {/* desktop nav links */}
         <nav className="nav-links" style={{ display: "flex", alignItems: "center", gap: 2 }}>
-          {NAV_LINKS.map((l) => (
+          {links.map((l) => (
             <NavLink key={l.href} {...l} onClick={l.href === "#inicio" ? replayIntro : undefined} />
           ))}
         </nav>
@@ -128,7 +132,7 @@ export function Nav() {
           <OnAir />
         </div>
         <nav style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          {NAV_LINKS.map((l, i) => (
+          {links.map((l, i) => (
             <a
               key={l.href}
               href={l.href}

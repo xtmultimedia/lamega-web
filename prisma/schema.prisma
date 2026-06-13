@@ -155,5 +155,6 @@ model StationState {
   id               Int      @id @default(1)
   emergencyActive  Boolean  @default(false)
   emergencyMessage String?
+  tvLive           Boolean  @default(false) // Mega TV on-air flag, pushed by the automation app
   updatedAt        DateTime @updatedAt
 }

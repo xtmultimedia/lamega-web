@@ -179,6 +179,24 @@ Activa o desactiva el modo emergencia (banner en el sitio + aviso en dashboard).
 
 ---
 
+## POST /api/radio/tv
+
+Muestra u oculta la sección **Mega TV** en el sitio. Llamar con `true` al
+**iniciar** la transmisión en OneStream y con `false` al **detenerla**. El sitio
+muestra Mega TV solo mientras `live === true` (auto mostrar/ocultar).
+
+**Request**
+
+```json
+{ "live": true }
+```
+
+**Response** — `200` `{ "ok": true, "live": true }`
+
+**SSE emitido:** `tv_status` → `{ "live": true }`
+
+---
+
 ## GET /api/radio/events — Server-Sent Events
 
 Stream SSE consumido por el sitio público y el dashboard (no requiere API
@@ -188,7 +206,7 @@ Al conectar se envía un evento `snapshot` con el estado completo:
 
 ```
 event: snapshot
-data: { "now_playing": {...}, "program": {...}, "emergency": {...}, "stats": {...} }
+data: { "now_playing": {...}, "program": {...}, "emergency": {...}, "tv_live": false, "stats": {...} }
 ```
 
 Luego, cada cambio se propaga inmediatamente:
@@ -200,6 +218,7 @@ Luego, cada cambio se propaga inmediatamente:
 | `listener_count` | POST /api/radio/stats/listeners |
 | `queue_update` | POST /api/radio/queue/dequeue · aprobar/rechazar en el dashboard |
 | `emergency` | POST /api/radio/emergency · acción rápida del dashboard |
+| `tv_status` | POST /api/radio/tv (mostrar/ocultar Mega TV) |
 | `new_request` | Nueva solicitud enviada desde /pide |
 
 Se envía un comentario heartbeat (`: heartbeat`) cada 25 s para mantener viva

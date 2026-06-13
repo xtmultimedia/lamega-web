@@ -10,6 +10,7 @@ export type RadioEvent =
   | "emergency"
   | "new_request"
   | "config_update"
+  | "tv_status"
   | "snapshot";
 
 type Subscriber = (event: RadioEvent, data: unknown) => void;

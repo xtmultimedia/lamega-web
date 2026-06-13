@@ -10,6 +10,7 @@ Muestra cómo la app Python se comunica con el sitio web:
   - POST /api/radio/queue/dequeue    → marcar canción como puesta al aire
   - GET  /api/radio/stats            → estadísticas en vivo
   - POST /api/radio/emergency        → activar/desactivar modo emergencia
+  - POST /api/radio/tv               → mostrar/ocultar Mega TV (al aire / fuera)
   - GET  /api/radio/events (SSE)     → escuchar eventos en tiempo real
 
 Dependencias:
@@ -91,6 +92,14 @@ class LaMegaClient:
         if message:
             payload["message"] = message
         return self._post("/api/radio/emergency", payload)
+
+    def set_tv_live(self, live: bool) -> dict:
+        """Muestra/oculta la sección Mega TV en el sitio.
+
+        Llamar con True al INICIAR la transmisión en OneStream y con False al
+        DETENERLA. La web muestra Mega TV solo mientras live == True.
+        """
+        return self._post("/api/radio/tv", {"live": live})
 
     # ---- lectura ----
 
