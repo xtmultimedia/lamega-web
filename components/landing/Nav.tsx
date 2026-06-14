@@ -50,7 +50,7 @@ export function Nav() {
         {/* logo + badge */}
         <a href="#inicio" onClick={() => setOpen(false)} style={{ display: "flex", alignItems: "center", gap: 13, flexShrink: 0, zIndex: 2 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/assets/mega-logo.png" alt="La Mega" style={{ height: 36, width: "auto", filter: "drop-shadow(0 4px 14px rgba(227,30,36,0.45))" }} />
+          <img src="/assets/mega-logo.png" alt="La Mega 99.9 FM — radio de Ibarra, Imbabura" style={{ height: 36, width: "auto", filter: "drop-shadow(0 4px 14px rgba(227,30,36,0.45))" }} />
           <span
             style={{
               fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 12, letterSpacing: "0.1em",

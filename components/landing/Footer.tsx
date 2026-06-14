@@ -40,7 +40,7 @@ export function Footer() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/assets/mega-logo.png"
-            alt="La Mega 99.9"
+            alt="La Mega 99.9 FM — Solo La Mega, Supera a La Mega"
             style={{ height: 56, margin: "0 auto 18px", filter: "drop-shadow(0 6px 22px rgba(227,30,36,0.5))" }}
           />
           <div className="display" style={{ fontSize: 18, color: "var(--fg-2)", letterSpacing: "0.1em" }}>

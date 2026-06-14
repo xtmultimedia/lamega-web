@@ -6,6 +6,23 @@ Versiones siguiendo [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.4.0] — 2026-06-14
+
+### Añadido
+- **Fundación SEO (buscadores tradicionales + IA)**: metadata rica en `app/layout.tsx` (Open Graph, Twitter cards, canonical, `metadataBase`, keywords, robots), datos estructurados **JSON-LD** (`RadioStation` + `WebSite`), `robots.txt` que **permite explícitamente crawlers de IA** (GPTBot, OAI-SearchBot, ClaudeBot, PerplexityBot, Google-Extended, etc.) y bloquea `/admin` y `/api`, `sitemap.xml`, web manifest, **imagen Open Graph de marca** (1200×630, generada en build → estática) y `public/llms.txt` para asistentes de IA.
+- Posicionamiento de marca recalcado en descripción/JSON-LD/llms.txt/OG: una de las radios más escuchadas de Imbabura y por ecuatorianos en el mundo; primera emisora con su propio sistema creado con IA.
+
+### Cambiado
+- Metadata corregida: ahora dice **Ibarra, Imbabura** (antes "Guayaquil/Ecuador", dato viejo).
+- `/admin`, `/admin/login` y `/pide/print` marcados `noindex`; `/pide` con título y descripción propios.
+- `alt` descriptivos en los logos del Nav y el Footer.
+
+### Técnico
+- `lib/seo.ts`: fuente de verdad única (datos de la estación, redes, helpers de JSON-LD) consumida por metadata, robots, sitemap, manifest y la imagen OG.
+- Rutas de metadata de Next: `app/robots.ts`, `app/sitemap.ts`, `app/manifest.ts`, `app/opengraph-image.tsx` (runtime nodejs, gradiente lineal compatible con satori).
+
+---
+
 ## [1.3.0] — 2026-06-14
 
 ### Añadido
