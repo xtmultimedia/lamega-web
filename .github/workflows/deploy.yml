@@ -1,0 +1,92 @@
+name: Deploy to FastComet
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+# Never run two deploys/restarts at once (NPROC safety on the shared host).
+concurrency:
+  group: deploy-production
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build (standalone)
+        run: npm run build
+
+      - name: Assemble standalone bundle
+        run: |
+          cp -r .next/static .next/standalone/.next/static
+          cp -r public .next/standalone/public
+
+      - name: Configure SSH
+        env:
+          SSH_KEY: ${{ secrets.FASTCOMET_SSH_KEY }}
+          SSH_HOST: ${{ secrets.FASTCOMET_SSH_HOST }}
+          SSH_PORT: ${{ secrets.FASTCOMET_SSH_PORT }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -p "$SSH_PORT" "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Deploy via rsync
+        env:
+          SSH_HOST: ${{ secrets.FASTCOMET_SSH_HOST }}
+          SSH_PORT: ${{ secrets.FASTCOMET_SSH_PORT }}
+          SSH_USER: ${{ secrets.FASTCOMET_SSH_USER }}
+        run: |
+          # --delete keeps the server clean of stale build files, but .env (prod
+          # secrets) and public/uploads (user-uploaded media) are protected.
+          # Retry: the shared host's NPROC limit can transiently refuse new forks.
+          n=0
+          until rsync -az --delete \
+              --exclude='.env' \
+              --exclude='public/uploads' \
+              -e "ssh -p $SSH_PORT -i ~/.ssh/id_ed25519" \
+              .next/standalone/ \
+              "$SSH_USER@$SSH_HOST:/home/producci/lamegaecuador.com/.next/standalone/"; do
+            n=$((n+1))
+            if [ "$n" -ge 6 ]; then echo "::error::rsync failed after $n attempts (server NPROC limit?)"; exit 1; fi
+            echo "rsync attempt $n failed — retrying in 25s…"
+            sleep 25
+          done
+
+      - name: Restart Passenger
+        env:
+          SSH_HOST: ${{ secrets.FASTCOMET_SSH_HOST }}
+          SSH_PORT: ${{ secrets.FASTCOMET_SSH_PORT }}
+          SSH_USER: ${{ secrets.FASTCOMET_SSH_USER }}
+        run: |
+          n=0
+          until ssh -p "$SSH_PORT" -i ~/.ssh/id_ed25519 "$SSH_USER@$SSH_HOST" \
+              "touch /home/producci/lamegaecuador.com/tmp/restart.txt"; do
+            n=$((n+1))
+            if [ "$n" -ge 6 ]; then echo "::error::restart touch failed after $n attempts"; exit 1; fi
+            echo "restart attempt $n failed — retrying in 20s…"
+            sleep 20
+          done
+
+      - name: Smoke test
+        run: |
+          echo "Waiting for Passenger to cycle…"
+          code=$(curl -sS -o /dev/null -w '%{http_code}' --retry 5 --retry-delay 5 --retry-all-errors https://lamegaecuador.com || echo "000")
+          echo "Home: $code"
+          [ "$code" = "200" ] || { echo "::error::Home did not return 200"; exit 1; }
+          st=$(curl -sS -o /dev/null -w '%{http_code}' --retry 3 --retry-delay 4 --retry-all-errors https://lamegaecuador.com/api/station || echo "000")
+          echo "API /api/station: $st"
+          [ "$st" = "200" ] || { echo "::error::/api/station did not return 200"; exit 1; }
+          echo "Deploy verified ✅"

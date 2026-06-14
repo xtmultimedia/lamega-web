@@ -6,6 +6,15 @@ Versiones siguiendo [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.5.0] — 2026-06-14
+
+### Añadido
+- **Auto-deploy (CI/CD) con GitHub Actions**: cada `push` a `main` compila en un runner de GitHub, ensambla el `standalone` y lo despliega a FastComet por **rsync sobre SSH**, luego dispara el restart de Passenger y hace un smoke-test. Sin builds en el server ni subidas manuales. `.github/workflows/deploy.yml`.
+- Protecciones: `--exclude='.env'` y `--exclude='public/uploads'` (no se pisan secrets ni subidas de usuarios), `concurrency` para no solapar deploys/restarts, y reintentos en los pasos SSH para tolerar el límite de procesos (NPROC) del hosting compartido.
+- Secrets en GitHub: `FASTCOMET_SSH_HOST/PORT/USER/KEY` (llave de deploy ed25519 dedicada, autorizada en cPanel → SSH Access).
+
+---
+
 ## [1.4.0] — 2026-06-14
 
 ### Añadido
