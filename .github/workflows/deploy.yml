@@ -35,13 +35,13 @@ jobs:
       - name: Configure SSH
         env:
           SSH_KEY: ${{ secrets.FASTCOMET_SSH_KEY }}
-          SSH_HOST: ${{ secrets.FASTCOMET_SSH_HOST }}
-          SSH_PORT: ${{ secrets.FASTCOMET_SSH_PORT }}
         run: |
+          # Only write the key here (no network calls, so this step can't flake).
+          # Host key is trusted on first use via StrictHostKeyChecking=accept-new
+          # in the rsync/restart steps, whose retries absorb transient NPROC.
           mkdir -p ~/.ssh
           printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -p "$SSH_PORT" "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null
 
       - name: Deploy via rsync
         env:
@@ -56,7 +56,7 @@ jobs:
           until rsync -az --delete \
               --exclude='.env' \
               --exclude='public/uploads' \
-              -e "ssh -p $SSH_PORT -i ~/.ssh/id_ed25519" \
+              -e "ssh -p $SSH_PORT -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=accept-new" \
               .next/standalone/ \
               "$SSH_USER@$SSH_HOST:/home/producci/lamegaecuador.com/.next/standalone/"; do
             n=$((n+1))
@@ -72,7 +72,7 @@ jobs:
           SSH_USER: ${{ secrets.FASTCOMET_SSH_USER }}
         run: |
           n=0
-          until ssh -p "$SSH_PORT" -i ~/.ssh/id_ed25519 "$SSH_USER@$SSH_HOST" \
+          until ssh -p "$SSH_PORT" -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=accept-new "$SSH_USER@$SSH_HOST" \
               "touch /home/producci/lamegaecuador.com/tmp/restart.txt"; do
             n=$((n+1))
             if [ "$n" -ge 6 ]; then echo "::error::restart touch failed after $n attempts"; exit 1; fi
