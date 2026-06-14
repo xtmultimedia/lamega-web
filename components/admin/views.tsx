@@ -10,6 +10,7 @@ import { Icon } from "@/components/ui";
 import { useRadio } from "@/components/radio/RadioProvider";
 import { AdmButton, Badge, Card, IconBtn, Toggle, ViewTitle } from "./primitives";
 import { SolicitudesTable, useRequests } from "./requests";
+import { DEFAULT_FOOTER, type FooterColumn } from "@/lib/footer";
 
 /* ---------- Stat cards (live) ---------- */
 function StatCard({ s }: { s: { label: string; value: string; icon: string; hue: string; live?: boolean; delta: string } }) {
@@ -257,6 +258,7 @@ interface StationConfigForm {
   pushOn: boolean;
   autoOn: boolean;
   maintenance: boolean;
+  footer: FooterColumn[];
 }
 
 export function ConfiguracionView() {
@@ -267,12 +269,36 @@ export function ConfiguracionView() {
   useEffect(() => {
     fetch("/api/admin/config")
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => d && setCfg(d.config))
+      .then((d) => {
+        if (!d) return;
+        // the API hands us footer parsed (array | null); show defaults when empty
+        const footer: FooterColumn[] =
+          Array.isArray(d.config?.footer) && d.config.footer.length ? d.config.footer : DEFAULT_FOOTER;
+        setCfg({ ...d.config, footer });
+      })
       .catch(() => {});
   }, []);
 
   const setField = (k: keyof StationConfigForm) => (v: string | boolean) =>
     setCfg((c) => (c ? { ...c, [k]: v } : c));
+
+  // ---- footer editor helpers ----
+  const setFooter = (fn: (f: FooterColumn[]) => FooterColumn[]) =>
+    setCfg((c) => (c ? { ...c, footer: fn(c.footer) } : c));
+  const addColumn = () => setFooter((f) => [...f, { title: "Nueva columna", links: [] }]);
+  const removeColumn = (ci: number) => setFooter((f) => f.filter((_, i) => i !== ci));
+  const setColTitle = (ci: number, title: string) =>
+    setFooter((f) => f.map((c, i) => (i === ci ? { ...c, title } : c)));
+  const addLink = (ci: number) =>
+    setFooter((f) => f.map((c, i) => (i === ci ? { ...c, links: [...c.links, { label: "Nuevo enlace", url: "" }] } : c)));
+  const removeLink = (ci: number, li: number) =>
+    setFooter((f) => f.map((c, i) => (i === ci ? { ...c, links: c.links.filter((_, j) => j !== li) } : c)));
+  const setLink = (ci: number, li: number, key: "label" | "url", v: string) =>
+    setFooter((f) =>
+      f.map((c, i) =>
+        i === ci ? { ...c, links: c.links.map((l, j) => (j === li ? { ...l, [key]: v } : l)) } : c,
+      ),
+    );
 
   const save = async () => {
     if (!cfg) return;
@@ -292,6 +318,7 @@ export function ConfiguracionView() {
           pushOn: cfg.pushOn,
           autoOn: cfg.autoOn,
           maintenance: cfg.maintenance,
+          footer: cfg.footer,
         }),
       });
       if (!res.ok) throw new Error();
@@ -386,6 +413,77 @@ export function ConfiguracionView() {
             <Toggle on={cfg[r.k] as boolean} onChange={setField(r.k)} color={r.danger ? "var(--red)" : "var(--green)"} />
           </div>
         ))}
+      </Card>
+
+      {/* ---- Footer editor ---- */}
+      <Card style={{ marginTop: 20 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 6 }}>
+          <div className="mono" style={{ fontSize: 11, letterSpacing: "0.2em", color: "var(--fg-3)", textTransform: "uppercase" }}>
+            Footer del sitio
+          </div>
+          <AdmButton icon="plus" onClick={addColumn}>Agregar columna</AdmButton>
+        </div>
+        <div style={{ fontSize: 13, color: "var(--fg-3)", marginBottom: 16 }}>
+          Columnas y enlaces que aparecen al pie de la web. La URL es opcional: con URL el enlace es clickeable, sin URL queda como texto.
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
+          {cfg.footer.map((col, ci) => (
+            <div
+              key={ci}
+              style={{ background: "var(--bg-2)", border: "1px solid var(--line-2)", borderRadius: "var(--r-sm)", padding: 14 }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                <input
+                  value={col.title}
+                  onChange={(e) => setColTitle(ci, e.target.value)}
+                  placeholder="Título de columna"
+                  style={{
+                    flex: 1, background: "var(--bg)", border: "1px solid var(--line-2)", borderRadius: "var(--r-xs)",
+                    padding: "9px 11px", color: "#fff", fontFamily: "var(--font-display)", fontSize: 14, fontWeight: 600,
+                  }}
+                />
+                <IconBtn icon="trash-2" color="var(--red)" title="Eliminar columna" onClick={() => removeColumn(ci)} />
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {col.links.map((lnk, li) => (
+                  <div key={li} style={{ display: "flex", flexDirection: "column", gap: 6, paddingBottom: 8, borderBottom: li < col.links.length - 1 ? "1px solid var(--line-1)" : "none" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <input
+                        value={lnk.label}
+                        onChange={(e) => setLink(ci, li, "label", e.target.value)}
+                        placeholder="Etiqueta"
+                        style={{
+                          flex: 1, background: "var(--bg)", border: "1px solid var(--line-2)", borderRadius: "var(--r-xs)",
+                          padding: "8px 10px", color: "#fff", fontFamily: "var(--font-body)", fontSize: 13,
+                        }}
+                      />
+                      <IconBtn icon="x" color="var(--red)" title="Eliminar enlace" onClick={() => removeLink(ci, li)} />
+                    </div>
+                    <input
+                      value={lnk.url ?? ""}
+                      onChange={(e) => setLink(ci, li, "url", e.target.value)}
+                      placeholder="URL (opcional): https://… , mailto:… , /pagina"
+                      style={{
+                        background: "var(--bg)", border: "1px solid var(--line-1)", borderRadius: "var(--r-xs)",
+                        padding: "7px 10px", color: "var(--fg-2)", fontFamily: "var(--font-mono)", fontSize: 12,
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={() => addLink(ci)}
+                style={{
+                  marginTop: 12, width: "100%", background: "transparent", border: "1px dashed var(--line-2)",
+                  borderRadius: "var(--r-xs)", padding: "8px 10px", color: "var(--fg-2)", fontSize: 13, cursor: "pointer",
+                  display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
+                }}
+              >
+                <Icon name="plus" size={14} /> Agregar enlace
+              </button>
+            </div>
+          ))}
+        </div>
       </Card>
     </>
   );

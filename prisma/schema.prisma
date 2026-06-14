@@ -147,6 +147,7 @@ model StationConfig {
   pushOn      Boolean  @default(true)
   autoOn      Boolean  @default(true)
   maintenance Boolean  @default(false)
+  footer      String?  @db.Text // JSON: [{ title, links: [{ label, url? }] }] — null = usa el footer por defecto
   updatedAt   DateTime @updatedAt
 }
 

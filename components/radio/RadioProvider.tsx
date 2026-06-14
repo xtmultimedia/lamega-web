@@ -12,6 +12,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import type { FooterColumn } from "@/lib/footer";
 
 export interface NowPlaying {
   title: string;
@@ -48,6 +49,7 @@ export interface StationConfigInfo {
   city: string;
   coverage: string;
   slogan: string;
+  footer?: FooterColumn[] | null;
 }
 
 const DEFAULT_CONFIG: StationConfigInfo = {
@@ -55,6 +57,7 @@ const DEFAULT_CONFIG: StationConfigInfo = {
   city: "Ibarra",
   coverage: "Imbabura",
   slogan: "Solo La Mega",
+  footer: null,
 };
 
 interface RadioCtxValue {

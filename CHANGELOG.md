@@ -6,6 +6,18 @@ Versiones siguiendo [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.3.0] — 2026-06-14
+
+### Añadido
+- **Footer editable desde el panel**: nueva sección "Footer del sitio" en `/admin` → Configuración para editar las columnas y enlaces del pie de página. Estructura flexible (agregar/quitar columnas y enlaces). Cada enlace tiene etiqueta y una **URL opcional**: con URL es clickeable (externos abren en pestaña nueva), sin URL queda como texto. Las URLs se validan (solo `http(s)`, `mailto:`, `tel:` o rutas relativas) para evitar inyección de `javascript:`.
+
+### Técnico
+- `StationConfig.footer` (`TEXT`, JSON) — `null` usa el footer por defecto. Migración idempotente en el arranque (`lib/prisma.ts`), igual que `tvLive`.
+- `lib/footer.ts`: tipos compartidos (`FooterColumn`/`FooterLink`), `DEFAULT_FOOTER`, `isSafeFooterUrl`, `parseFooter`.
+- `/api/admin/config`: el `zod` schema acepta `footer` (máx. 8 columnas, 12 enlaces c/u); se incluye en `config_update` (SSE) y en el snapshot (`lib/radio-state.ts`). `RadioProvider`/`Footer` consumen `config.footer`.
+
+---
+
 ## [1.2.0] — 2026-06-12
 
 ### Añadido

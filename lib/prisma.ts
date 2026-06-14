@@ -55,6 +55,8 @@ function pool(): Pool {
     // can't reach the DB when the user is at its max_user_connections limit.
     p.query("ALTER TABLE StationState ADD COLUMN tvLive TINYINT(1) NOT NULL DEFAULT 0")
       .catch(() => {}); // ignore "duplicate column" once it exists
+    p.query("ALTER TABLE StationConfig ADD COLUMN footer TEXT NULL")
+      .catch(() => {}); // editable footer (JSON); ignore once it exists
   }
   return globalForDb.__megaPool;
 }

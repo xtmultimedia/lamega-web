@@ -1,4 +1,5 @@
 import { prisma } from "./prisma";
+import { parseFooter } from "./footer";
 
 export async function getStats() {
   const startOfDay = new Date();
@@ -76,6 +77,7 @@ export async function getSnapshot() {
       city: config?.city ?? "Guayaquil",
       coverage: config?.coverage ?? "Ecuador",
       slogan: config?.slogan ?? "Solo La Mega, supera a La Mega",
+      footer: parseFooter(config?.footer),
     },
     stats,
   };

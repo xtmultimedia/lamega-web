@@ -3,20 +3,17 @@
 import React, { useState } from "react";
 import { Icon } from "@/components/ui";
 import { useRadio } from "@/components/radio/RadioProvider";
+import { DEFAULT_FOOTER, isSafeFooterUrl } from "@/lib/footer";
 
-const FOOT_COLS = [
-  { title: "Sobre Nosotros", links: ["Quiénes somos", "Historia", "Nuestro equipo", "Trabaja con nosotros", "Prensa"] },
-  { title: "Programación", links: ["Mega Click", "Megapolis", "Los de las 6", "Los Cómplices de la Noche", "Parrilla completa"] },
-  { title: "Legal", links: ["Términos de uso", "Política de privacidad", "Concursos y bases", "Cookies"] },
-  { title: "Contacto", links: ["Cabina: 096 13 14 999", "megacontacto@yahoo.com", "WhatsApp: 096 13 14 999", "Ibarra, Imbabura"] },
-];
-
-function FootLink({ children }: { children: React.ReactNode }) {
+function FootLink({ label, url }: { label: string; url?: string }) {
   const [h, setH] = useState(false);
+  const isLink = !!url && isSafeFooterUrl(url) && url.trim() !== "";
+  const external = isLink && /^https?:/i.test(url!.trim());
   return (
     <a
-      href="#"
-      onClick={(e) => e.preventDefault()}
+      href={isLink ? url : "#"}
+      {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+      onClick={isLink ? undefined : (e) => e.preventDefault()}
       onMouseEnter={() => setH(true)}
       onMouseLeave={() => setH(false)}
       style={{
@@ -24,13 +21,14 @@ function FootLink({ children }: { children: React.ReactNode }) {
         transition: "color var(--dur)", paddingLeft: h ? 8 : 0,
       }}
     >
-      {children}
+      {label}
     </a>
   );
 }
 
 export function Footer() {
   const { config } = useRadio();
+  const cols = config.footer && config.footer.length ? config.footer : DEFAULT_FOOTER;
   return (
     <footer
       id="contacto"
@@ -55,11 +53,11 @@ export function Footer() {
           className="foot-grid"
           style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 32, paddingBottom: 48, borderBottom: "1px solid var(--line-1)" }}
         >
-          {FOOT_COLS.map((c) => (
-            <div key={c.title}>
+          {cols.map((c, ci) => (
+            <div key={`${c.title}-${ci}`}>
               <div className="display" style={{ fontSize: 16, color: "#fff", marginBottom: 14, letterSpacing: "0.04em" }}>{c.title}</div>
-              {c.links.map((l) => (
-                <FootLink key={l}>{l}</FootLink>
+              {c.links.map((l, li) => (
+                <FootLink key={`${l.label}-${li}`} label={l.label} url={l.url} />
               ))}
             </div>
           ))}
