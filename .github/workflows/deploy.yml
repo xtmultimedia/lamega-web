@@ -25,7 +25,21 @@ jobs:
         run: npm ci
 
       - name: Build (standalone)
+        # NEXT_PUBLIC_* vars are inlined at build time. The runner has no prod
+        # .env, so pass the public stream URL here (configurable via a repo
+        # variable; defaults to the HTTPS proxy). Without this the client falls
+        # back to the in-code default.
+        env:
+          NEXT_PUBLIC_STREAM_URL: ${{ vars.NEXT_PUBLIC_STREAM_URL || 'https://usa3.fastcast4u.com/proxy/lamega?mp=/stream' }}
         run: npm run build
+
+      - name: Guard against insecure stream URL (mixed-content)
+        run: |
+          if grep -rq "http://usa3.fastcast4u" .next/static; then
+            echo "::error::An insecure http:// stream URL is baked into the client bundle — it would be blocked as mixed content on the HTTPS site (no audio). Check NEXT_PUBLIC_STREAM_URL and the fallback in RadioProvider.tsx."
+            exit 1
+          fi
+          echo "Stream URL is HTTPS ✅"
 
       - name: Assemble standalone bundle
         run: |

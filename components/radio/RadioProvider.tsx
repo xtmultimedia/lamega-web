@@ -96,8 +96,11 @@ export const useRadio = () => {
   return ctx;
 };
 
+// Fallback MUST be the HTTPS proxy — NEXT_PUBLIC_ vars are inlined at build time,
+// and CI builds without the prod .env. An http:// fallback gets blocked as mixed
+// content on the HTTPS site (= no audio), so the default must be HTTPS too.
 const STREAM_URL =
-  process.env.NEXT_PUBLIC_STREAM_URL || "http://usa3.fastcast4u.com:2250/stream";
+  process.env.NEXT_PUBLIC_STREAM_URL || "https://usa3.fastcast4u.com/proxy/lamega?mp=/stream";
 
 export function RadioProvider({ children }: { children: React.ReactNode }) {
   const [nowPlaying, setNowPlaying] = useState<NowPlaying>(FALLBACK_TRACK);
