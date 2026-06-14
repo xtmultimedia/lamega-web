@@ -3,6 +3,9 @@ name: Deploy to FastComet
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
   workflow_dispatch: {}
 
 # Never run two deploys/restarts at once (NPROC safety on the shared host).

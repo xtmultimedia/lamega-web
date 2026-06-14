@@ -58,6 +58,14 @@ Primera versión pública de la web de **La Mega 99.9 FM** (Ibarra, Imbabura), e
   (096 13 14 999 · megacontacto@yahoo.com) reales.
 - Stream HTTPS de FastCast4U; apps Android/iOS y skill de Amazon Alexa enlazadas.
 
+### Corregido (hotfix del día de lanzamiento)
+- **El audio no sonaba en producción** tras activar el auto-deploy: las variables
+  `NEXT_PUBLIC_*` se incrustan en build-time y el runner de CI compila sin el `.env` de
+  producción, así que el player caía a un fallback `http://…:2250` que el navegador bloqueaba
+  por *mixed-content* en el sitio HTTPS. Solución: fallback del player a la URL **HTTPS**
+  (`usa3.fastcast4u.com/proxy/lamega`), el build de CI pasa `NEXT_PUBLIC_STREAM_URL`, y un
+  guard en el workflow falla el deploy si se cuela una URL de stream insegura.
+
 ---
 
 ## Tipos de cambio

@@ -33,6 +33,12 @@ También se puede lanzar a mano desde la pestaña **Actions** (`workflow_dispatc
 
 ### Notas operativas
 
+- **Variables `NEXT_PUBLIC_*` (build-time):** se **incrustan al compilar**, y el runner de CI
+  **no tiene el `.env` de producción**. Toda var `NEXT_PUBLIC_*` debe pasarse al paso de build
+  del workflow (hoy: `NEXT_PUBLIC_STREAM_URL`, vía `vars.NEXT_PUBLIC_STREAM_URL` con default
+  HTTPS). Las vars **sin** `NEXT_PUBLIC_` se leen en runtime del `.env` del server y no hace
+  falta pasarlas. (Regresión 2026-06-14: faltó esta var → el player cayó a un `http://` y el
+  audio se bloqueó por mixed-content; hay un guard en el workflow que ahora lo previene.)
 - **NPROC=80 compartido:** si la cuenta acumula procesos (p. ej. instancias `next-server`
   colgadas de un deploy viejo en crash-loop), el `rsync` puede fallar con
   `fork: Resource temporarily unavailable`. El workflow reintenta 6× los pasos SSH; si igual se
