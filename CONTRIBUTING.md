@@ -27,7 +27,7 @@ Credenciales del dashboard (dev): `admin` / `lamega999` (los del `.env.example`)
 
 | Rama | Propósito |
 |---|---|
-| `main` | Producción — siempre deployable |
+| `main` | Producción — **cada push/merge dispara el auto-deploy a FastComet** (GitHub Actions) |
 | `feature/nombre` | Nuevas funcionalidades |
 | `fix/nombre` | Corrección de bugs |
 | `chore/nombre` | Mantenimiento, dependencias, docs |
@@ -51,6 +51,11 @@ Credenciales del dashboard (dev): `admin` / `lamega999` (los del `.env.example`)
 
 4. Push y crear Pull Request hacia `main`.
 
+5. Al mergear a `main`, el workflow `.github/workflows/deploy.yml` despliega solo a
+   producción (build → rsync/SSH → restart). Seguilo en la pestaña **Actions**.
+   Si tocás algo visible, **subí `APP_VERSION` en `lib/version.ts`** (v1.0 → v1.1 …) y
+   agregá la entrada correspondiente en `CHANGELOG.md`.
+
 ## Convención de commits
 
 Seguimos [Conventional Commits](https://www.conventionalcommits.org/):
@@ -69,7 +74,7 @@ Ejemplos:
 ```
 feat: añade reproductor de video en Mega TV
 fix: corrige número de teléfono en el ticker
-docs: actualiza guía de despliegue para Railway
+docs: actualiza guía de despliegue de FastComet
 chore: actualiza next a 14.3
 ```
 

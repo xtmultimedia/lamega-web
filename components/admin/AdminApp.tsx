@@ -7,6 +7,7 @@ import React, { useEffect, useState } from "react";
 import { signOut } from "next-auth/react";
 import { Icon } from "@/components/ui";
 import { RadioProvider, useRadio } from "@/components/radio/RadioProvider";
+import { APP_VERSION } from "@/lib/version";
 import { DashboardView, SolicitudesView, PublicidadView, ConfiguracionView } from "./views";
 import { ProgramacionView, LocutoresView, PlaylistsView, GaleriaView } from "./station-views";
 
@@ -114,7 +115,7 @@ function Sidebar({
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>Producción</div>
-              <div className="mono" style={{ fontSize: 10, color: "var(--fg-3)" }}>La Mega 99.9</div>
+              <div className="mono" style={{ fontSize: 10, color: "var(--fg-3)" }}>La Mega 99.9 · v{APP_VERSION}</div>
             </div>
           </div>
         </div>

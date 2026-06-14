@@ -199,6 +199,16 @@ Layout (app/layout.tsx)
 | App Store | App iOS de La Mega | Link fijo en MegaApp.tsx |
 | Amazon Alexa | Skill "La Mega Ecuador" | Gestionada por FastCast4U |
 | Spotify | Links de playlists | Links fijos en data.ts |
+| OneStream Live | Player de video Mega TV | Universal Embed Player en MegaTV.tsx |
+| GitHub Actions | Auto-deploy a FastComet (build → rsync/SSH → restart) | `.github/workflows/deploy.yml` + secrets |
+
+## SEO (buscadores tradicionales + IA)
+
+Fuente única en `lib/seo.ts` (datos de la estación + helpers JSON-LD), consumida por la
+metadata de `app/layout.tsx`, los datos estructurados `RadioStation` + `WebSite`, y las rutas
+de metadata de Next: `app/robots.ts` (permite crawlers de IA: GPTBot, ClaudeBot, PerplexityBot,
+Google-Extended…), `app/sitemap.ts`, `app/manifest.ts` y `app/opengraph-image.tsx` (imagen OG de
+marca generada en build). `public/llms.txt` resume la estación para asistentes de IA.
 
 ## Escalabilidad futura
 

@@ -1,15 +1,21 @@
 # La Mega 99.9 FM — Sitio web oficial
 
+**Versión: v1.0** · en vivo en [lamegaecuador.com](https://lamegaecuador.com)
+(la versión mostrada en la web y el panel sale de [`lib/version.ts`](lib/version.ts))
+
 Aplicación web de producción para **La Mega 99.9 FM**, la radio líder de Imbabura, Ecuador. Emite desde Ibarra las 24 horas con pop, urbano y los hits que mueven la provincia.
 
 - **Frontend:** Next.js 14 (App Router, TypeScript) + diseño dark-stage glassmorphism (Saira / Sora / Space Mono)
 - **Tiempo real:** Server-Sent Events (`/api/radio/events`) + lectura automática de metadatos ICY del stream
 - **Base de datos:** MySQL, accedida vía un cliente liviano **mysql2** (`lib/prisma.ts` — shim con API compatible con Prisma; ver nota abajo)
 - **Mega TV:** player de video en vivo embebido de **OneStream Live** (Universal Embed Player), con auto mostrar/ocultar según la señal
+- **Footer editable** desde `/admin` → Configuración (columnas y enlaces con URL opcional)
+- **SEO (buscadores + IA):** metadata + Open Graph, JSON-LD `RadioStation`, `robots.txt` que permite crawlers de IA, `sitemap.xml`, web manifest, imagen OG de marca y `llms.txt` (fuente única en `lib/seo.ts`)
 - **Auth:** NextAuth.js (credenciales desde `.env`) para `/admin`
 - **Email:** Resend (notificación al equipo comercial)
 - **API:** endpoints `/api/radio/*` para la app de automatización Python
 - **Alexa:** Skill "La Mega Ecuador" gestionada por FastCast4U (invocación: *"Alexa, abre radio mega ecuador"*)
+- **Auto-deploy (CI/CD):** cada `push` a `main` despliega a FastComet vía GitHub Actions
 
 ## Páginas
 
@@ -120,11 +126,16 @@ verdad de tablas/columnas (mapeo directo: nombre de modelo = tabla, campo = colu
 
 ## Despliegue
 
-Hosting actual: **FastComet** (cPanel + Phusion Passenger, Node.js 22, MySQL).
-El build se hace localmente (`npm run build`, salida `standalone`), se empaqueta y se sube
-por FTP/terminal, y se reinicia el app en *Application Manager*.
+Hosting actual: **FastComet** (cPanel + Phusion Passenger / LiteSpeed, Node.js 22, MySQL).
 
-Ver [DEPLOYMENT.md](DEPLOYMENT.md) para el procedimiento detallado de FastComet (el real)
+**Auto-deploy (recomendado):** cada `push` a `main` dispara `.github/workflows/deploy.yml`,
+que compila en GitHub Actions, sincroniza el `standalone` por **rsync/SSH** a FastComet,
+reinicia Passenger y verifica. No hay que compilar en el server (no puede) ni subir a mano.
+
+**Manual (fallback):** build local (`npm run build`) → subir el `standalone` por cPanel File
+Manager → extraer y tocar `tmp/restart.txt`.
+
+Ver [DEPLOYMENT.md](DEPLOYMENT.md) para ambos procedimientos en detalle, los secrets de CI,
 y notas para otros hosts Node persistentes (Railway/Render/Fly) si algún día se migra.
 
 ## Estructura del proyecto
@@ -140,6 +151,10 @@ app/
     admin/          Endpoints del dashboard (sesión NextAuth)
   admin/            Dashboard + login
   pide/             Formulario público
+  robots.ts         /robots.txt (permite crawlers de IA, bloquea /admin /api)
+  sitemap.ts        /sitemap.xml
+  manifest.ts       /manifest.webmanifest
+  opengraph-image.tsx  Imagen OG de marca (1200×630, generada en build)
 components/
   landing/          Secciones de la landing (Hero, Ticker, MegaApp, etc.)
   admin/            Componentes del dashboard
@@ -153,9 +168,16 @@ lib/
   auth.ts           Opciones de NextAuth
   station.ts        Seed de datos reales de la estación
   radio-state.ts    Snapshot de estado en vivo (now-playing, programa, stats, tv_live)
+  seo.ts            Fuente única de SEO (datos + JSON-LD)
+  footer.ts         Modelo del footer editable (tipos, default, parser, validación URL)
+  version.ts        APP_VERSION (versión mostrada en web + admin)
 prisma/
   schema.prisma     Fuente de verdad de tablas/columnas (no se usa el engine en runtime)
-public/assets/      Logo y assets estáticos
+public/
+  assets/           Logo y assets estáticos
+  llms.txt          Resumen de la estación para asistentes de IA
+.github/workflows/
+  deploy.yml        Auto-deploy a FastComet (build → rsync/SSH → restart)
 radio_client_example.py  Cliente Python 3 de ejemplo
 ```
 

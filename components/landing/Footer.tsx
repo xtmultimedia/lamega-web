@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Icon } from "@/components/ui";
 import { useRadio } from "@/components/radio/RadioProvider";
 import { DEFAULT_FOOTER, isSafeFooterUrl } from "@/lib/footer";
+import { APP_VERSION } from "@/lib/version";
 
 function FootLink({ label, url }: { label: string; url?: string }) {
   const [h, setH] = useState(false);
@@ -75,7 +76,7 @@ export function Footer() {
           }}
         >
           <div className="mono" style={{ fontSize: 12, color: "var(--fg-3)" }}>
-            © 2026 La Mega 99.9 · Ecuador · Todos los derechos reservados
+            © 2026 La Mega 99.9 · Ecuador · Todos los derechos reservados · v{APP_VERSION}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap" }}>
             <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--fg-2)" }}>

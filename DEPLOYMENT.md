@@ -1,11 +1,46 @@
 # Guía de despliegue — La Mega 99.9 FM
 
-El sitio corre en **FastComet** (hosting compartido cPanel) con **Phusion Passenger**,
-Node.js 22 y MySQL. El build de Next.js se hace en modo **standalone** (`output: "standalone"`
-en `next.config.mjs`) y se despliega como un bundle autocontenido.
+El sitio corre en **FastComet** (hosting compartido cPanel) con **Phusion Passenger** /
+LiteSpeed, Node.js 22 y MySQL. El build de Next.js se hace en modo **standalone**
+(`output: "standalone"` en `next.config.mjs`) y se despliega como un bundle autocontenido.
 
-> **Importante:** el build se hace **localmente** (`npm run build` en tu Mac), no en el servidor.
-> El servidor compartido no tiene recursos para compilar (SWC/rayon).
+> **Importante:** el servidor compartido **no puede compilar** (SWC/rayon crashea). El build se
+> hace fuera del server: en GitHub Actions (auto-deploy) o localmente en tu Mac (manual).
+
+---
+
+## Auto-deploy (CI/CD) — método recomendado
+
+Cada `push` a `main` dispara [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml):
+
+1. Compila en un runner de GitHub (`npm ci && npm run build`).
+2. Ensambla el `standalone` (copia `static` + `public`).
+3. **rsync sobre SSH** a `~/lamegaecuador.com/.next/standalone/`
+   (`--delete`, pero **excluye `.env` y `public/uploads`** para no pisar secrets ni subidas).
+4. `touch tmp/restart.txt` (reinicia Passenger).
+5. Smoke-test con User-Agent de navegador.
+
+También se puede lanzar a mano desde la pestaña **Actions** (`workflow_dispatch`).
+
+### Secrets (Settings → Secrets → Actions)
+
+| Secret | Valor |
+|---|---|
+| `FASTCOMET_SSH_HOST` | `s12771.usc1.stableserver.net` |
+| `FASTCOMET_SSH_PORT` | `22` |
+| `FASTCOMET_SSH_USER` | `producci` |
+| `FASTCOMET_SSH_KEY` | llave privada ed25519 de deploy (la pública se autoriza en cPanel → SSH Access) |
+
+### Notas operativas
+
+- **NPROC=80 compartido:** si la cuenta acumula procesos (p. ej. instancias `next-server`
+  colgadas de un deploy viejo en crash-loop), el `rsync` puede fallar con
+  `fork: Resource temporarily unavailable`. El workflow reintenta 6× los pasos SSH; si igual se
+  traba, pedile a FastComet (live chat) que mate los `next-server` viejos. Estado sano ≈ 3
+  instancias / ~35 de 80.
+- **Smoke-test 415:** el WAF de FastComet le responde 415 al IP del runner aunque a los
+  visitantes reales les da 200. El workflow lo trata como warning-pass (el deploy ya ocurrió);
+  solo falla en 5xx/timeout. (Opcional: whitelistear los rangos de IP de GitHub Actions.)
 
 ---
 
@@ -66,7 +101,9 @@ y su árbol de dependencias al bundle.
 
 ---
 
-## Procedimiento de re-deploy (el que se usa)
+## Procedimiento de re-deploy manual (fallback)
+
+> Usalo solo si el auto-deploy de CI no está disponible. El día a día es por push a `main`.
 
 ### 1. Build local
 
