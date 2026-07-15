@@ -8,6 +8,8 @@ import { signOut } from "next-auth/react";
 import { Icon } from "@/components/ui";
 import { RadioProvider, useRadio } from "@/components/radio/RadioProvider";
 import { APP_VERSION } from "@/lib/version";
+import { canAccessSection, ROLE_LABELS, type Role } from "@/lib/roles";
+import { UsuariosView } from "./UsuariosView";
 import { DashboardView, SolicitudesView, PublicidadView, ConfiguracionView } from "./views";
 import { ProgramacionView, LocutoresView, PlaylistsView, GaleriaView } from "./station-views";
 
@@ -19,15 +21,17 @@ const ADM_NAV = [
   { id: "galeria", label: "Galería", icon: "image" },
   { id: "publicidad", label: "Publicidad", icon: "megaphone" },
   { id: "solicitudes", label: "Solicitudes", icon: "inbox", badge: true },
+  { id: "usuarios", label: "Usuarios", icon: "users" },
   { id: "configuracion", label: "Configuración", icon: "settings" },
 ];
 
 function Sidebar({
-  active, onSelect, open, onClose,
+  active, onSelect, open, role, onClose,
 }: {
-  active: string; onSelect: (id: string) => void; open: boolean; onClose: () => void;
+  active: string; onSelect: (id: string) => void; open: boolean; role: Role; onClose: () => void;
 }) {
   const { stats } = useRadio();
+  const nav = ADM_NAV.filter((n) => canAccessSection(role, n.id));
   return (
     <>
       <div
@@ -63,7 +67,7 @@ function Sidebar({
           Panel de control
         </div>
         <nav style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
-          {ADM_NAV.map((n) => {
+          {nav.map((n) => {
             const on = active === n.id;
             const badge = n.badge && stats ? stats.requests_pending : null;
             return (
@@ -114,7 +118,7 @@ function Sidebar({
               LM
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>Producción</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>{ROLE_LABELS[role]}</div>
               <div className="mono" style={{ fontSize: 10, color: "var(--fg-3)" }}>La Mega 99.9 · v{APP_VERSION}</div>
             </div>
           </div>
@@ -206,12 +210,15 @@ const VIEWS: Record<string, React.ComponentType<any>> = {
   playlists: PlaylistsView,
   galeria: GaleriaView,
   configuracion: ConfiguracionView,
+  usuarios: UsuariosView,
 };
 
-function AdminShell() {
+function AdminShell({ role }: { role: Role }) {
   const [active, setActive] = useState("dashboard");
   const [sidebar, setSidebar] = useState(false);
-  const View = VIEWS[active] ?? (() => null);
+  // Cosmetic guard — the API routes enforce roles server-side.
+  const allowed = canAccessSection(role, active);
+  const View = (allowed && VIEWS[active]) || (() => null);
 
   useEffect(() => {
     document.body.classList.add("no-vignette");
@@ -230,6 +237,7 @@ function AdminShell() {
         active={active}
         onSelect={setActive}
         open={sidebar}
+        role={role}
         onClose={() => { if (window.innerWidth <= 1024) setSidebar(false); }}
       />
       <div className="adm-main" style={{ marginLeft: 256, minHeight: "100vh", display: "flex", flexDirection: "column" }}>
@@ -250,10 +258,10 @@ function AdminShell() {
   );
 }
 
-export function AdminApp() {
+export function AdminApp({ role }: { role: Role }) {
   return (
     <RadioProvider>
-      <AdminShell />
+      <AdminShell role={role} />
     </RadioProvider>
   );
 }

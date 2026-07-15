@@ -136,6 +136,22 @@ model Playlist {
 }
 
 // Singleton (id = 1): station settings edited in /admin → Configuración.
+// Admin panel users (email + password login, roles). Replaces the single shared
+// ADMIN_USER/ADMIN_PASSWORD credential, which stays as an emergency escape hatch.
+model AdminUser {
+  id              String    @id
+  email           String    @unique
+  name            String
+  role            String    @default("editor") // admin | editor | locutor
+  passwordHash    String? // null until the invite is accepted
+  inviteTokenHash String? // sha256 of the invite token; null once accepted
+  inviteExpiresAt DateTime?
+  active          Boolean   @default(true)
+  lastLoginAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
 model StationConfig {
   id          Int      @id @default(1)
   frequency   String   @default("99.9 FM")

@@ -5,5 +5,7 @@ export default withAuth({
 });
 
 export const config = {
-  matcher: ["/admin", "/admin/((?!login).*)"],
+  // /admin/login and /admin/invite must stay public: the invitee has no session
+  // yet when setting their first password.
+  matcher: ["/admin", "/admin/((?!login|invite).*)"],
 };

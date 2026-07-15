@@ -57,6 +57,22 @@ function pool(): Pool {
       .catch(() => {}); // ignore "duplicate column" once it exists
     p.query("ALTER TABLE StationConfig ADD COLUMN footer TEXT NULL")
       .catch(() => {}); // editable footer (JSON); ignore once it exists
+    // Admin panel users (email + role). Idempotent: CREATE TABLE IF NOT EXISTS.
+    p.query(
+      `CREATE TABLE IF NOT EXISTS AdminUser (
+        id VARCHAR(191) NOT NULL PRIMARY KEY,
+        email VARCHAR(191) NOT NULL UNIQUE,
+        name VARCHAR(191) NOT NULL,
+        role VARCHAR(32) NOT NULL DEFAULT 'editor',
+        passwordHash VARCHAR(255) NULL,
+        inviteTokenHash VARCHAR(191) NULL,
+        inviteExpiresAt DATETIME NULL,
+        active TINYINT(1) NOT NULL DEFAULT 1,
+        lastLoginAt DATETIME NULL,
+        createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )`,
+    ).catch(() => {});
   }
   return globalForDb.__megaPool;
 }
@@ -79,6 +95,7 @@ const MODELS: Record<string, Meta> = {
   playlist: { table: "Playlist", idType: "uuid" },
   stationConfig: { table: "StationConfig", idType: "int", updatedAt: true },
   stationState: { table: "StationState", idType: "int", updatedAt: true },
+  adminUser: { table: "AdminUser", idType: "uuid", createdAt: true, updatedAt: true },
 };
 
 // ── SQL helpers ───────────────────────────────────────────────────────────

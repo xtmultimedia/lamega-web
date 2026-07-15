@@ -1,6 +1,6 @@
 # La Mega 99.9 FM — Sitio web oficial
 
-**Versión: v1.0** · en vivo en [lamegaecuador.com](https://lamegaecuador.com)
+**Versión: v1.1** · en vivo en [lamegaecuador.com](https://lamegaecuador.com)
 (la versión mostrada en la web y el panel sale de [`lib/version.ts`](lib/version.ts))
 
 Aplicación web de producción para **La Mega 99.9 FM**, la radio líder de Imbabura, Ecuador. Emite desde Ibarra las 24 horas con pop, urbano y los hits que mueven la provincia.
@@ -11,7 +11,7 @@ Aplicación web de producción para **La Mega 99.9 FM**, la radio líder de Imba
 - **Mega TV:** player de video en vivo embebido de **OneStream Live** (Universal Embed Player), con auto mostrar/ocultar según la señal
 - **Footer editable** desde `/admin` → Configuración (columnas y enlaces con URL opcional)
 - **SEO (buscadores + IA):** metadata + Open Graph, JSON-LD `RadioStation`, `robots.txt` que permite crawlers de IA, `sitemap.xml`, web manifest, imagen OG de marca y `llms.txt` (fuente única en `lib/seo.ts`)
-- **Auth:** NextAuth.js (credenciales desde `.env`) para `/admin`
+- **Auth:** NextAuth.js con **cuentas individuales (email + contraseña, bcrypt) y roles** — Admin / Editor / Locutor — e invitaciones por email. Las credenciales del `.env` siguen valiendo como acceso de emergencia
 - **Email:** Resend (notificación al equipo comercial)
 - **API:** endpoints `/api/radio/*` para la app de automatización Python
 - **Alexa:** Skill "La Mega Ecuador" gestionada por FastCast4U (invocación: *"Alexa, abre radio mega ecuador"*)

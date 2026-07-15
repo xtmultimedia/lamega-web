@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
 import { randomUUID } from "crypto";
 import { writeFile } from "fs/promises";
 import path from "path";
-import { authOptions } from "@/lib/auth";
+import { requireRole } from "@/lib/auth-guard";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -22,8 +21,9 @@ const MAX_BYTES = 80 * 1024 * 1024; // 80 MB
 // Receives one file (multipart field "file"), stores it under
 // public/uploads/ and returns its public URL.
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Uploads feed the Galería: content roles.
+  const denied = await requireRole(["admin", "editor"]);
+  if (denied) return denied;
 
   const form = await req.formData().catch(() => null);
   const file = form?.get("file");

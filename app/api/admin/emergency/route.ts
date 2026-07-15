@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
 import { z } from "zod";
-import { authOptions } from "@/lib/auth";
+import { requireRole } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
 import { emit } from "@/lib/events";
 
@@ -12,8 +11,9 @@ const schema = z.object({ active: z.boolean(), message: z.string().optional() })
 // Same effect as POST /api/radio/emergency but authenticated with the
 // admin session (used by the dashboard's quick action).
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Site-wide emergency banner: content roles, not locutores.
+  const denied = await requireRole(["admin", "editor"]);
+  if (denied) return denied;
 
   const parsed = schema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Invalid body" }, { status: 400 });

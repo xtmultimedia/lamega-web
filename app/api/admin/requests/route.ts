@@ -1,19 +1,15 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
 import { z } from "zod";
-import { authOptions } from "@/lib/auth";
+import { requireRole } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
 import { emit } from "@/lib/events";
 import { getQueue } from "@/lib/radio-state";
 
 export const dynamic = "force-dynamic";
 
+// Solicitudes: every role (locutores put songs on air).
 async function requireSession() {
-  const session = await getServerSession(authOptions);
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  return null;
+  return requireRole(["admin", "editor", "locutor"]);
 }
 
 export async function GET() {

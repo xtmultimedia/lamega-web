@@ -158,7 +158,25 @@ const unsub = subscribe((event, data) => {
                               Acceso OK    Redirect /admin/login
 ```
 
-La sesión se guarda en una cookie `httpOnly` firmada con `NEXTAUTH_SECRET`. Las credenciales se comparan contra `ADMIN_USER` / `ADMIN_PASSWORD` del entorno (sin usuarios en DB — intencional para simplicidad).
+La sesión se guarda en una cookie `httpOnly` firmada con `NEXTAUTH_SECRET`.
+
+**Cuentas y roles (desde v1.1):** los usuarios viven en la tabla `AdminUser` (email único +
+`passwordHash` bcrypt + rol). Se entra con **email + contraseña**. Roles:
+
+| Rol | Alcance |
+|---|---|
+| `admin` | Todo, incluida Configuración y la gestión de usuarios |
+| `editor` | Contenido (Programación, Locutores, Playlists, Galería, Publicidad) + Solicitudes |
+| `locutor` | Dashboard + Solicitudes |
+
+- `lib/roles.ts` — **puro** (constantes, `SECTION_ROLES`, `canAccessSection`); lo importa el cliente.
+- `lib/auth-guard.ts` — **server-only**; `requireRole()` devuelve 401/403 y lo usan todas las
+  rutas `/api/admin/*`. La UI filtra el nav, pero **la autorización real es del servidor**.
+- **Escape hatch:** `ADMIN_USER`/`ADMIN_PASSWORD` del `.env` siguen siendo válidos con rol
+  `admin` (id `env-admin`). Evita quedar bloqueado si la DB o la tabla fallan.
+- **Invitaciones:** el Admin invita por email; se guarda `inviteTokenHash` (sha256) con
+  vencimiento a 7 días y un solo uso. El invitado crea su contraseña en `/admin/invite`
+  (público, `noindex`). El email va por Resend, pero el link también se muestra en el panel.
 
 ## Autenticación de la API (radio-auth.ts)
 

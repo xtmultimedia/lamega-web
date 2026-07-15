@@ -8,6 +8,39 @@ La versión mostrada en la web y el panel sale de [`lib/version.ts`](lib/version
 
 ---
 
+## [1.1.0] — 2026-07-15
+
+### Añadido
+- **Multi-admin con roles e invitaciones.** El panel deja de tener una única credencial
+  compartida: ahora hay **cuentas individuales con email y contraseña** (hash **bcryptjs**) y
+  tres roles:
+  - **Admin** — acceso total, incluida Configuración y la gestión de usuarios.
+  - **Editor** — contenido (Programación, Locutores, Playlists, Galería, Publicidad) y
+    Solicitudes; sin Configuración ni usuarios.
+  - **Locutor** — solo Dashboard y Solicitudes (poner temas al aire).
+- Nueva sección **Usuarios** en el panel (solo Admin): invitar por email, cambiar rol,
+  activar/desactivar, eliminar y reenviar invitación.
+- **Invitación por email** (Resend) con link para que la persona cree su contraseña
+  (`/admin/invite`, token hasheado, vence en 7 días, un solo uso). **El panel siempre muestra el
+  link copiable**, así el alta no depende de que el email esté configurado.
+- El login ahora pide **email** en lugar de usuario.
+
+### Seguridad
+- Los permisos se aplican **en el servidor** (`requireRole` → **403**), no solo ocultando el nav.
+- **Escape hatch anti-lockout:** las credenciales del `.env` (`ADMIN_USER`/`ADMIN_PASSWORD`)
+  siguen funcionando siempre con rol Admin, incluso si la DB no responde.
+- Barandas: no podés cambiar tu propio rol, desactivarte ni eliminarte; siempre debe quedar al
+  menos un Admin activo; contraseña mínima de 8 caracteres; `/admin/invite` va `noindex`.
+
+### Técnico
+- Tabla `AdminUser` creada por **migración idempotente** (`CREATE TABLE IF NOT EXISTS`) al
+  arrancar, igual que `tvLive` y `footer`; agregada al mapa `MODELS` del shim mysql2.
+- `lib/roles.ts` es **puro** (constantes/permisos, apto para cliente) y `lib/auth-guard.ts`
+  concentra los guards de servidor (con `server-only`), para no arrastrar next-auth/bcrypt/mysql2
+  al bundle del navegador.
+
+---
+
 ## [1.0.0] — 2026-06-14 — 🚀 Lanzamiento oficial
 
 Primera versión pública de la web de **La Mega 99.9 FM** (Ibarra, Imbabura), en vivo en

@@ -26,7 +26,7 @@ function LoginForm() {
     setBusy(true);
     setError(null);
     const res = await signIn("credentials", {
-      username: user,
+      email: user,
       password: pass,
       redirect: false,
     });
@@ -35,7 +35,7 @@ function LoginForm() {
       router.push(params.get("callbackUrl") || "/admin");
       router.refresh();
     } else {
-      setError("Usuario o contraseña incorrectos.");
+      setError("Email o contraseña incorrectos.");
     }
   };
 
@@ -72,9 +72,9 @@ function LoginForm() {
         >
           <label style={{ display: "block", marginBottom: 18 }}>
             <span className="mono" style={{ display: "block", fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--fg-2)", fontWeight: 700, marginBottom: 9 }}>
-              Usuario
+              Email
             </span>
-            <input value={user} onChange={(e) => setUser(e.target.value)} placeholder="admin" autoComplete="username" required style={INPUT} />
+            <input value={user} onChange={(e) => setUser(e.target.value)} placeholder="tu@email.com" autoComplete="username" required style={INPUT} />
           </label>
           <label style={{ display: "block", marginBottom: 22 }}>
             <span className="mono" style={{ display: "block", fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--fg-2)", fontWeight: 700, marginBottom: 9 }}>
