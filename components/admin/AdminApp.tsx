@@ -10,6 +10,7 @@ import { RadioProvider, useRadio } from "@/components/radio/RadioProvider";
 import { APP_VERSION } from "@/lib/version";
 import { canAccessSection, ROLE_LABELS, type Role } from "@/lib/roles";
 import { UsuariosView } from "./UsuariosView";
+import { PerfilView } from "./PerfilView";
 import { DashboardView, SolicitudesView, PublicidadView, ConfiguracionView } from "./views";
 import { ProgramacionView, LocutoresView, PlaylistsView, GaleriaView } from "./station-views";
 
@@ -22,6 +23,7 @@ const ADM_NAV = [
   { id: "publicidad", label: "Publicidad", icon: "megaphone" },
   { id: "solicitudes", label: "Solicitudes", icon: "inbox", badge: true },
   { id: "usuarios", label: "Usuarios", icon: "users" },
+  { id: "perfil", label: "Mi Perfil", icon: "user" },
   { id: "configuracion", label: "Configuración", icon: "settings" },
 ];
 
@@ -211,6 +213,7 @@ const VIEWS: Record<string, React.ComponentType<any>> = {
   galeria: GaleriaView,
   configuracion: ConfiguracionView,
   usuarios: UsuariosView,
+  perfil: PerfilView,
 };
 
 function AdminShell({ role }: { role: Role }) {

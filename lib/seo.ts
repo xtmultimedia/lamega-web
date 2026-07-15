@@ -83,6 +83,33 @@ export function radioStationJsonLd() {
   };
 }
 
+// /staff — an ItemList of Person nodes so search engines (and AI answers) can
+// name the actual on-air team, tied back to the station.
+export function staffJsonLd(
+  members: { name: string; alias?: string; bio?: string | null; photoUrl?: string | null; socials?: { url: string }[] }[],
+) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: `Staff de ${SITE.name}`,
+    url: `${SITE.url}/staff`,
+    itemListElement: members.map((m, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      item: {
+        "@type": "Person",
+        name: m.name,
+        ...(m.alias ? { alternateName: m.alias } : {}),
+        jobTitle: "Locutor",
+        ...(m.bio ? { description: m.bio } : {}),
+        ...(m.photoUrl ? { image: `${SITE.url}${m.photoUrl}` } : {}),
+        ...(m.socials?.length ? { sameAs: m.socials.map((s) => s.url) } : {}),
+        worksFor: { "@id": `${SITE.url}/#radiostation` },
+      },
+    })),
+  };
+}
+
 export function webSiteJsonLd() {
   return {
     "@context": "https://schema.org",

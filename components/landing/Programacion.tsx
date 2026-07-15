@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Icon, Section, SectionHead, Bloom } from "@/components/ui";
 import { DAYS, SCHEDULE, WEEKEND, PROGRAMS } from "@/components/data";
-import { useStationData, type PublicShow } from "@/components/useStationData";
+import { useStationData, type PublicHost, type PublicShow } from "@/components/useStationData";
 
 interface Block {
   time: string;
@@ -11,24 +11,38 @@ interface Block {
   hue: string;
 }
 
+// One conductor on a featured card. `photo` is null when the show isn't linked
+// to a real Host (e.g. "Automático") — the card then shows the mic fallback.
+interface CardHost {
+  name: string;
+  photo: string | null;
+  hue: string;
+}
+
+// The design's static fallback stores a single free-text host string.
+const staticPrograms = PROGRAMS.map((p) => ({
+  ...p,
+  hosts: [{ name: p.host, photo: null, hue: p.hue }] as CardHost[],
+}));
+
 // Derive the featured cards + weekly grid from the DB-backed station data;
 // fall back to the design's static content while loading.
 function useProgramData() {
   const station = useStationData();
   if (!station || station.shows.length === 0) {
-    return { programs: PROGRAMS, schedule: SCHEDULE as Block[], weekend: WEEKEND as Record<string, Block[]> };
+    return { programs: staticPrograms, schedule: SCHEDULE as Block[], weekend: WEEKEND as Record<string, Block[]> };
   }
   const on = station.shows.filter((s) => s.is_on);
   const toBlock = (s: PublicShow): Block => ({ time: s.start_time, name: s.name.toUpperCase(), hue: s.hue });
-  // match host names (full or partial, e.g. 'Andrés "El Búho" Vera' vs "Andrés Vera")
-  const photoFor = (hostName: string) => {
-    const clean = (s: string) => s.toLowerCase().replace(/["“”]/g, "").trim();
-    const target = clean(hostName);
-    const found = station.hosts.find((h) => {
-      const hn = clean(h.name);
-      return hn === target || target.includes(hn) || hn.includes(target);
-    });
-    return found?.photo_url ?? null;
+  // Real link (host_ids) — replaces the old fuzzy name match, which only ever
+  // found the FIRST host of a multi-host show. Unlinked rows ("Automático",
+  // not-yet-backfilled) fall back to the free-text label with no photo.
+  const hostsFor = (s: PublicShow): CardHost[] => {
+    const linked = s.host_ids
+      .map((id) => station.hosts.find((h) => h.id === id))
+      .filter((h): h is PublicHost => !!h);
+    if (linked.length === 0) return [{ name: s.host, photo: null, hue: s.hue }];
+    return linked.map((h) => ({ name: h.name, photo: h.photo_url ?? null, hue: h.hue }));
   };
   const programs = on
     .filter((s) => s.featured)
@@ -36,13 +50,12 @@ function useProgramData() {
       name: s.name.toUpperCase(),
       time: `${s.start_time} – ${s.end_time}`,
       slot: (s.slot || "").toUpperCase(),
-      host: s.host,
+      hosts: hostsFor(s),
       blurb: s.blurb || "",
       hue: s.hue,
-      photo: photoFor(s.host),
     }));
   return {
-    programs: programs.length ? programs : PROGRAMS,
+    programs: programs.length ? programs : staticPrograms,
     schedule: on.filter((s) => s.days === "semana").map(toBlock),
     weekend: {
       "SÁB": on.filter((s) => s.days === "sabado").map(toBlock),
@@ -255,7 +268,7 @@ function hexToRgb(hex: string): string {
   return `${r},${g},${b}`;
 }
 
-function ProgramCard({ p }: { p: { name: string; time: string; slot: string; host: string; blurb: string; hue: string; photo?: string | null } }) {
+function ProgramCard({ p }: { p: { name: string; time: string; slot: string; hosts: CardHost[]; blurb: string; hue: string } }) {
   const [h, setH] = useState(false);
   return (
     <div
@@ -282,18 +295,30 @@ function ProgramCard({ p }: { p: { name: string; time: string; slot: string; hos
       {/* body */}
       <div style={{ padding: "18px 20px 22px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
-          <div
-            style={{
-              width: 46, height: 46, borderRadius: "50%", flexShrink: 0, overflow: "hidden",
-              background: p.photo ? `url(${p.photo}) center/cover` : `radial-gradient(circle at 35% 30%, ${p.hue}, #150708)`,
-              border: "2px solid var(--line-2)", display: "flex", alignItems: "center", justifyContent: "center",
-            }}
-          >
-            {!p.photo && <Icon name="mic" size={20} color="rgba(255,255,255,0.85)" />}
+          {/* stacked avatars — one per conductor (overlap when there are several) */}
+          <div style={{ display: "flex", flexShrink: 0 }}>
+            {p.hosts.map((h, i) => (
+              <div
+                key={`${h.name}-${i}`}
+                title={h.name}
+                style={{
+                  width: 46, height: 46, borderRadius: "50%", overflow: "hidden",
+                  background: h.photo ? `url(${h.photo}) center/cover` : `radial-gradient(circle at 35% 30%, ${h.hue}, #150708)`,
+                  border: "2px solid var(--line-2)", display: "flex", alignItems: "center", justifyContent: "center",
+                  marginLeft: i ? -14 : 0, zIndex: p.hosts.length - i, position: "relative",
+                }}
+              >
+                {!h.photo && <Icon name="mic" size={20} color="rgba(255,255,255,0.85)" />}
+              </div>
+            ))}
           </div>
-          <div>
-            <div className="mono" style={{ fontSize: 10, letterSpacing: "0.15em", color: "var(--fg-3)", textTransform: "uppercase" }}>Conduce</div>
-            <div style={{ fontWeight: 600, fontSize: 14, color: "#fff" }}>{p.host}</div>
+          <div style={{ minWidth: 0 }}>
+            <div className="mono" style={{ fontSize: 10, letterSpacing: "0.15em", color: "var(--fg-3)", textTransform: "uppercase" }}>
+              {p.hosts.length > 1 ? "Conducen" : "Conduce"}
+            </div>
+            <div style={{ fontWeight: 600, fontSize: 14, color: "#fff" }}>
+              {p.hosts.map((h) => h.name).join(" & ")}
+            </div>
           </div>
         </div>
         <p style={{ fontSize: 13.5, lineHeight: 1.6, color: "var(--fg-2)", margin: 0 }}>{p.blurb}</p>

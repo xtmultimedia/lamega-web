@@ -15,8 +15,15 @@ interface PanelUser {
   name: string;
   role: Role;
   active: boolean;
+  host_id: string | null;
   pending: boolean;
   last_login_at: string | null;
+}
+
+// Minimal shape of a locutor, for the profile-link picker.
+interface HostOption {
+  id: string;
+  name: string;
 }
 
 const SELECT: React.CSSProperties = {
@@ -86,6 +93,7 @@ function InviteLink({ url, onClose }: { url: string; onClose: () => void }) {
 
 export function UsuariosView() {
   const [users, setUsers] = useState<PanelUser[] | null>(null);
+  const [hosts, setHosts] = useState<HostOption[]>([]);
   const [note, setNote] = useState<{ ok: boolean; msg: string } | null>(null);
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -107,6 +115,12 @@ export function UsuariosView() {
 
   useEffect(() => {
     load();
+    // locutor list for the profile-link picker (this view is admin-only, and
+    // /api/admin/station allows admin/editor — so this is always permitted here)
+    fetch("/api/admin/station")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d?.hosts && setHosts(d.hosts.filter((h: HostOption) => h.id)))
+      .catch(() => {});
   }, [load]);
 
   const flash = (ok: boolean, msg: string) => {
@@ -253,6 +267,24 @@ export function UsuariosView() {
                   <option key={r} value={r}>{ROLE_LABELS[r]}</option>
                 ))}
               </select>
+              {/* Links the account to a locutor profile → unlocks Mi Perfil */}
+              <select
+                value={u.host_id ?? ""}
+                title="Perfil de locutor enlazado"
+                onChange={(e) =>
+                  patch(
+                    u.id,
+                    { hostId: e.target.value || null },
+                    e.target.value ? `${u.name} quedó enlazado a su perfil de locutor.` : `${u.name} ya no está enlazado a un locutor.`,
+                  )
+                }
+                style={{ ...SELECT, cursor: "pointer", maxWidth: 165 }}
+              >
+                <option value="">— Sin locutor —</option>
+                {hosts.map((h) => (
+                  <option key={h.id} value={h.id}>{h.name}</option>
+                ))}
+              </select>
               <div style={{ display: "flex", gap: 8 }}>
                 {u.pending && (
                   <IconBtn
@@ -275,6 +307,8 @@ export function UsuariosView() {
 
       <div style={{ fontSize: 12, color: "var(--fg-3)", marginTop: 14, lineHeight: 1.6 }}>
         Debe quedar siempre al menos un Admin activo. No podés cambiar tu propio rol, desactivarte ni eliminarte.
+        <br />
+        Enlazá una cuenta a un <strong>locutor</strong> para que pueda editar su foto, bio y redes desde <strong>Mi Perfil</strong> y aparecer en <strong>/staff</strong>.
       </div>
     </>
   );

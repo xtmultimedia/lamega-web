@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { writeFile } from "fs/promises";
 import path from "path";
-import { requireRole } from "@/lib/auth-guard";
+import { currentRole, requireRole } from "@/lib/auth-guard";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -16,14 +16,16 @@ const ALLOWED: Record<string, string> = {
   "video/webm": "webm",
   "video/quicktime": "mov",
 };
-const MAX_BYTES = 80 * 1024 * 1024; // 80 MB
+const MAX_BYTES = 80 * 1024 * 1024; // 80 MB — Galería (admin/editor)
+const LOCUTOR_MAX_BYTES = 8 * 1024 * 1024; // 8 MB — profile avatars
 
 // Receives one file (multipart field "file"), stores it under
 // public/uploads/ and returns its public URL.
 export async function POST(req: Request) {
-  // Uploads feed the Galería: content roles.
-  const denied = await requireRole(["admin", "editor"]);
+  // Galería (admin/editor) + Mi Perfil avatars (locutor, restricted below).
+  const denied = await requireRole(["admin", "editor", "locutor"]);
   if (denied) return denied;
+  const role = await currentRole();
 
   const form = await req.formData().catch(() => null);
   const file = form?.get("file");
@@ -34,7 +36,17 @@ export async function POST(req: Request) {
   if (!ext) {
     return NextResponse.json({ error: `Tipo no permitido: ${file.type}. Usa JPG, PNG, WebP, GIF, MP4, WebM o MOV.` }, { status: 400 });
   }
-  if (file.size > MAX_BYTES) {
+
+  // Locutores only ever upload their own avatar — images only, and far below
+  // the Galería's video allowance.
+  if (role === "locutor") {
+    if (!file.type.startsWith("image/")) {
+      return NextResponse.json({ error: "Solo podés subir imágenes (JPG, PNG, WebP)." }, { status: 400 });
+    }
+    if (file.size > LOCUTOR_MAX_BYTES) {
+      return NextResponse.json({ error: "La imagen es muy grande (máx. 8 MB)" }, { status: 400 });
+    }
+  } else if (file.size > MAX_BYTES) {
     return NextResponse.json({ error: "Archivo demasiado grande (máx. 80 MB)" }, { status: 400 });
   }
 

@@ -6,12 +6,14 @@
 
 import React, { useEffect, useState } from "react";
 import { Icon } from "@/components/ui";
+import type { HostSocial } from "@/lib/hosts";
 import { AdmButton, Card, IconBtn, Toggle, ViewTitle } from "./primitives";
 
 export interface ShowRow {
   id?: string;
   name: string;
-  host: string;
+  host: string; // display label, derived from hostIds
+  hostIds: string[]; // the real link
   startTime: string;
   endTime: string;
   days: "semana" | "sabado" | "domingo";
@@ -22,6 +24,9 @@ export interface ShowRow {
   featured: boolean;
 }
 
+// bio/socials must be carried here even though this view doesn't edit them:
+// the whole list is sent back on save, so a missing field would wipe what the
+// locutor wrote in Mi Perfil.
 export interface HostRow {
   id?: string;
   name: string;
@@ -29,6 +34,8 @@ export interface HostRow {
   show: string;
   hue: string;
   photoUrl?: string | null;
+  bio?: string | null;
+  socials?: HostSocial[] | null;
   showsCount: number;
 }
 
@@ -162,6 +169,76 @@ function Loading({ title, kicker }: { title: string; kicker: string }) {
   );
 }
 
+// Multi-select of locutores for a program. Replaces the old single <select>,
+// which couldn't express the multi-host reality already in the data
+// ("Joselyn Hernández & Marcos Cruz"). No selection = "Automático".
+function HostPicker({
+  hosts, selected, label, onToggle,
+}: {
+  hosts: HostRow[]; selected: string[]; label: string; onToggle: (hostId: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const named = hosts.filter((h) => h.id && selected.includes(h.id));
+  const text = named.length ? named.map((h) => h.name).join(" & ") : label || "Automático";
+
+  return (
+    <div style={{ position: "relative" }}>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        title={text}
+        style={{
+          ...FIELD, cursor: "pointer", maxWidth: 190, display: "flex", alignItems: "center", gap: 7,
+          textAlign: "left", whiteSpace: "nowrap", overflow: "hidden",
+        }}
+      >
+        <Icon name="mic" size={15} color="var(--fg-3)" />
+        <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}>
+          {named.length > 1 ? `${named.length} locutores` : text}
+        </span>
+        <Icon name="chevron-down" size={14} color="var(--fg-3)" />
+      </button>
+      {open && (
+        <>
+          <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 60 }} />
+          <div
+            style={{
+              position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 61, minWidth: 210, maxHeight: 260,
+              overflowY: "auto", background: "var(--bg-2)", border: "1px solid var(--line-2)",
+              borderRadius: "var(--r-sm)", boxShadow: "var(--shadow-lg)", padding: 6,
+            }}
+          >
+            {hosts.length === 0 && (
+              <div style={{ fontSize: 12, color: "var(--fg-3)", padding: 8 }}>No hay locutores cargados.</div>
+            )}
+            {hosts.map((h) =>
+              h.id ? (
+                <label
+                  key={h.id}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 9, padding: "7px 8px", borderRadius: "var(--r-xs)",
+                    cursor: "pointer", fontSize: 13, color: "#fff",
+                  }}
+                >
+                  <input type="checkbox" checked={selected.includes(h.id)} onChange={() => onToggle(h.id!)} />
+                  {h.name}
+                </label>
+              ) : (
+                <div key={h.name} style={{ fontSize: 11, color: "var(--fg-3)", padding: "7px 8px" }}>
+                  {h.name} — guardá primero para poder asignarlo
+                </div>
+              ),
+            )}
+            <div style={{ borderTop: "1px solid var(--line-1)", marginTop: 6, paddingTop: 6, fontSize: 11, color: "var(--fg-3)", padding: "8px" }}>
+              Sin selección = <strong>Automático</strong>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 /* ============================================================
    PROGRAMACIÓN
    ============================================================ */
@@ -178,7 +255,7 @@ export function ProgramacionView() {
   const add = () =>
     setShows((s) => [
       ...s!,
-      { name: "Nuevo programa", host: hosts?.[0]?.name ?? "Automático", startTime: "00:00", endTime: "01:00", days: "semana", hue: "#E31E24", isOn: true, featured: false },
+      { name: "Nuevo programa", host: "Automático", hostIds: [], startTime: "00:00", endTime: "01:00", days: "semana", hue: "#E31E24", isOn: true, featured: false },
     ]);
   const onDrop = (i: number) => {
     if (drag === null || drag === i) return;
@@ -191,9 +268,18 @@ export function ProgramacionView() {
     setDrag(null);
   };
 
-  const hostOptions = Array.from(
-    new Set([...(hosts ?? []).map((h) => h.name), "Automático", ...shows.map((s) => s.host)])
-  );
+  // Toggling a locutor rewrites BOTH hostIds (the real link) and host (the
+  // display label) so /api/station and CurrentProgram never drift from it.
+  const toggleHost = (i: number, hostId: string) => {
+    const cur = shows[i].hostIds ?? [];
+    const next = cur.includes(hostId) ? cur.filter((x) => x !== hostId) : [...cur, hostId];
+    const label =
+      next
+        .map((id) => (hosts ?? []).find((h) => h.id === id)?.name)
+        .filter(Boolean)
+        .join(" & ") || "Automático";
+    set(i, { hostIds: next, host: label });
+  };
 
   return (
     <>
@@ -248,14 +334,12 @@ export function ProgramacionView() {
                 <option key={v} value={v}>{l}</option>
               ))}
             </select>
-            <label style={{ display: "flex", alignItems: "center", gap: 7 }}>
-              <Icon name="mic" size={15} color="var(--fg-3)" />
-              <select value={s.host} onChange={(e) => set(i, { host: e.target.value })} style={{ ...FIELD, cursor: "pointer", maxWidth: 170 }}>
-                {hostOptions.map((h) => (
-                  <option key={h} value={h}>{h}</option>
-                ))}
-              </select>
-            </label>
+            <HostPicker
+              hosts={hosts ?? []}
+              selected={s.hostIds ?? []}
+              label={s.host}
+              onToggle={(hostId) => toggleHost(i, hostId)}
+            />
             <HuePicker value={s.hue} onChange={(hue) => set(i, { hue })} />
             <button
               type="button"

@@ -27,6 +27,8 @@ const patchSchema = z.object({
   role: z.enum(ROLES).optional(),
   active: z.boolean().optional(),
   resend_invite: z.boolean().optional(),
+  // links this account to its locutor profile; null unlinks
+  hostId: z.string().max(191).nullable().optional(),
 });
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
@@ -74,6 +76,15 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const data: Record<string, unknown> = {};
   if (parsed.data.role) data.role = parsed.data.role;
   if (typeof parsed.data.active === "boolean") data.active = parsed.data.active;
+  if ("hostId" in parsed.data) {
+    const hostId = parsed.data.hostId || null;
+    if (hostId) {
+      // don't let an admin link an account to a locutor that doesn't exist
+      const host = await prisma.host.findUnique({ where: { id: hostId } });
+      if (!host) return NextResponse.json({ error: "Ese locutor no existe" }, { status: 400 });
+    }
+    data.hostId = hostId;
+  }
   if (Object.keys(data).length === 0) return NextResponse.json({ error: "Nada que actualizar" }, { status: 400 });
 
   await prisma.adminUser.update({ where: { id: user.id }, data });

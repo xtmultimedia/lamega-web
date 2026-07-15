@@ -5,11 +5,13 @@
 // design's static content so nothing flashes empty.
 
 import { useEffect, useState } from "react";
+import type { HostSocial } from "@/lib/hosts";
 
 export interface PublicShow {
   id: string;
   name: string;
-  host: string;
+  host: string; // display label; host_ids is the real link
+  host_ids: string[];
   start_time: string;
   end_time: string;
   days: "semana" | "sabado" | "domingo";
@@ -36,6 +38,8 @@ export interface PublicHost {
   show: string;
   hue: string;
   photo_url?: string | null;
+  bio?: string | null;
+  socials: HostSocial[];
 }
 
 export interface PublicMedia {

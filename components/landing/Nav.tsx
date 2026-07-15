@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Icon, OnAir, SocialIcon } from "@/components/ui";
 import { NAV_LINKS } from "@/components/data";
 import { INTRO_EVENT } from "@/components/landing/Intro";
@@ -13,8 +14,10 @@ export function Nav() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const { tvLive } = useRadio();
+  // <Intro> only exists on the homepage; elsewhere let the link just navigate.
+  const isHome = usePathname() === "/";
   // Drop the "MEGA TV" link while the section is hidden (off air)
-  const links = tvLive ? NAV_LINKS : NAV_LINKS.filter((l) => l.href !== "#megatv");
+  const links = tvLive ? NAV_LINKS : NAV_LINKS.filter((l) => l.href !== "/#megatv");
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -48,7 +51,7 @@ export function Nav() {
         }}
       >
         {/* logo + badge */}
-        <a href="#inicio" onClick={() => setOpen(false)} style={{ display: "flex", alignItems: "center", gap: 13, flexShrink: 0, zIndex: 2 }}>
+        <a href="/" onClick={() => setOpen(false)} style={{ display: "flex", alignItems: "center", gap: 13, flexShrink: 0, zIndex: 2 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/assets/mega-logo.png" alt="La Mega 99.9 FM — radio de Ibarra, Imbabura" style={{ height: 36, width: "auto", filter: "drop-shadow(0 4px 14px rgba(227,30,36,0.45))" }} />
           <span
@@ -65,7 +68,7 @@ export function Nav() {
         {/* desktop nav links */}
         <nav className="nav-links" style={{ display: "flex", alignItems: "center", gap: 2 }}>
           {links.map((l) => (
-            <NavLink key={l.href} {...l} onClick={l.href === "#inicio" ? replayIntro : undefined} />
+            <NavLink key={l.href} {...l} onClick={isHome && l.href === "/#inicio" ? replayIntro : undefined} />
           ))}
         </nav>
 
@@ -138,7 +141,7 @@ export function Nav() {
               href={l.href}
               onClick={() => {
                 setOpen(false);
-                if (l.href === "#inicio") replayIntro();
+                if (isHome && l.href === "/#inicio") replayIntro();
               }}
               className="nav-ov-link"
               style={{

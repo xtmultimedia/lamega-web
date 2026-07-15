@@ -1,4 +1,5 @@
 import { prisma } from "./prisma";
+import { normalizeName, parseHostIds, splitHostLabel } from "./hosts";
 
 // First-run seed populated from the filled questionnaire (Ibarra, Imbabura).
 
@@ -207,6 +208,48 @@ export async function seedStationIfEmpty() {
   }
 }
 
+type ShowRowLike = { id: string; host: string; hostIds?: string | null };
+type HostRowLike = { id: string; name: string; hue?: string; photoUrl?: string | null };
+
+/**
+ * Resolve a show's hosts through the real link (Show.hostIds).
+ * Falls back to the free-text Show.host label when nothing is linked — that's
+ * how "Automático" and not-yet-linked rows keep working (no photo, just a name).
+ * The shim can't join, so callers pass the already-loaded hosts array.
+ */
+export function resolveShowHosts<H extends HostRowLike>(
+  show: ShowRowLike,
+  hosts: H[],
+): { hosts: H[]; label: string } {
+  const ids = parseHostIds(show.hostIds);
+  const linked = ids.map((id) => hosts.find((h) => h.id === id)).filter((h): h is H => !!h);
+  if (linked.length === 0) return { hosts: [], label: show.host };
+  return { hosts: linked, label: linked.map((h) => h.name).join(" & ") };
+}
+
+/**
+ * One-shot backfill: turn the legacy free-text Show.host ("Joselyn Hernández &
+ * Marcos Cruz") into real Host ids. Runs only for rows that were never
+ * backfilled, and ALWAYS writes a value (even "[]") so it never retries.
+ *
+ * NOTE: filtering happens in memory on purpose — the shim compiles
+ * `where: { hostIds: null }` to `hostIds = NULL`, which is never true in SQL
+ * and would silently match zero rows (lib/prisma.ts compileWhere).
+ */
+async function backfillShowHosts(shows: ShowRowLike[], hosts: HostRowLike[]) {
+  const pending = shows.filter((s) => s.hostIds == null);
+  if (pending.length === 0) return; // common case: zero extra queries
+
+  for (const show of pending) {
+    const ids = splitHostLabel(show.host)
+      .map((token) => hosts.find((h) => normalizeName(h.name) === normalizeName(token))?.id)
+      .filter((id): id is string => !!id);
+    const json = JSON.stringify(ids);
+    show.hostIds = json; // mutate so the very first request already serves resolved data
+    await prisma.show.update({ where: { id: show.id }, data: { hostIds: json } }).catch(() => {});
+  }
+}
+
 export async function getStationData() {
   await seedStationIfEmpty();
   const [shows, hosts, playlists, media, config] = await Promise.all([
@@ -218,5 +261,7 @@ export async function getStationData() {
     prisma.mediaItem.findMany({ orderBy: { order: "asc" } }),
     prisma.stationConfig.findUnique({ where: { id: 1 } }),
   ]);
+  // the shim returns RowDataPacket[]; shape is guaranteed by prisma/schema.prisma
+  await backfillShowHosts(shows as unknown as ShowRowLike[], hosts as unknown as HostRowLike[]);
   return { shows, hosts, playlists, media, config };
 }

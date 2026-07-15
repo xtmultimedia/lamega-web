@@ -15,7 +15,16 @@ export interface FooterColumn {
 // Fallback content (matches the original hardcoded footer). Used when the DB has
 // no footer yet, and as the starting point in the admin editor.
 export const DEFAULT_FOOTER: FooterColumn[] = [
-  { title: "Sobre Nosotros", links: ["Quiénes somos", "Historia", "Nuestro equipo", "Trabaja con nosotros", "Prensa"].map((label) => ({ label })) },
+  {
+    title: "Sobre Nosotros",
+    links: [
+      { label: "Quiénes somos" },
+      { label: "Historia" },
+      { label: "Nuestro equipo", url: "/staff" },
+      { label: "Trabaja con nosotros" },
+      { label: "Prensa" },
+    ],
+  },
   { title: "Programación", links: ["Mega Click", "Megapolis", "Los de las 6", "Los Cómplices de la Noche", "Parrilla completa"].map((label) => ({ label })) },
   { title: "Legal", links: ["Términos de uso", "Política de privacidad", "Concursos y bases", "Cookies"].map((label) => ({ label })) },
   { title: "Contacto", links: ["Cabina: 096 13 14 999", "megacontacto@yahoo.com", "WhatsApp: 096 13 14 999", "Ibarra, Imbabura"].map((label) => ({ label })) },

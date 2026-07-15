@@ -14,6 +14,7 @@ type DbUser = {
   role: string;
   passwordHash: string | null;
   active: boolean;
+  hostId: string | null;
   lastLoginAt: Date | null;
   createdAt: Date;
 };
@@ -26,6 +27,7 @@ function toPublic(u: DbUser) {
     name: u.name,
     role: u.role,
     active: u.active,
+    host_id: u.hostId ?? null, // linked locutor profile (null = not linked)
     pending: !u.passwordHash, // invited but hasn't set a password yet
     last_login_at: u.lastLoginAt?.toISOString() ?? null,
     created_at: u.createdAt?.toISOString() ?? null,

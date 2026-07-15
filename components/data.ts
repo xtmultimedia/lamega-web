@@ -1,11 +1,14 @@
 // La Mega 99.9 — content data (ported from design-reference/data.jsx)
 
+// Root-relative anchors ("/#x", not "#x") so they also work from sub-pages
+// like /staff, where a bare fragment would resolve to nothing.
 export const NAV_LINKS = [
-  { label: "INICIO", href: "#inicio" },
-  { label: "PROGRAMACIÓN", href: "#programacion" },
-  { label: "MEGA TV", href: "#megatv" },
-  { label: "GALERÍA", href: "#galeria" },
-  { label: "CONTACTO", href: "#contacto" },
+  { label: "INICIO", href: "/#inicio" },
+  { label: "PROGRAMACIÓN", href: "/#programacion" },
+  { label: "STAFF", href: "/staff" },
+  { label: "MEGA TV", href: "/#megatv" },
+  { label: "GALERÍA", href: "/#galeria" },
+  { label: "CONTACTO", href: "/#contacto" },
 ];
 
 export const PROGRAMS = [

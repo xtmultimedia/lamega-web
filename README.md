@@ -1,6 +1,6 @@
 # La Mega 99.9 FM — Sitio web oficial
 
-**Versión: v1.1** · en vivo en [lamegaecuador.com](https://lamegaecuador.com)
+**Versión: v1.2** · en vivo en [lamegaecuador.com](https://lamegaecuador.com)
 (la versión mostrada en la web y el panel sale de [`lib/version.ts`](lib/version.ts))
 
 Aplicación web de producción para **La Mega 99.9 FM**, la radio líder de Imbabura, Ecuador. Emite desde Ibarra las 24 horas con pop, urbano y los hits que mueven la provincia.

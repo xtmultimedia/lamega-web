@@ -344,26 +344,45 @@ export const SOCIAL: Record<string, { label: string; color: string; path: string
     url: "https://open.spotify.com/user/31lyqygcxc5llvxdjpv7sdepfd7a",
     path: "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm4.59 14.43a.62.62 0 0 1-.86.21c-2.35-1.44-5.3-1.76-8.79-.96a.62.62 0 1 1-.28-1.21c3.81-.87 7.08-.5 9.72 1.11.3.18.39.57.21.85Zm1.22-2.72a.78.78 0 0 1-1.07.26c-2.69-1.65-6.79-2.13-9.97-1.17a.78.78 0 1 1-.45-1.49c3.63-1.1 8.15-.56 11.24 1.33.36.22.48.7.25 1.07Zm.11-2.84C14.8 8.96 9.4 8.78 6.3 9.72a.93.93 0 1 1-.54-1.78c3.56-1.08 9.52-.87 13.28 1.36a.93.93 0 1 1-.95 1.6Z",
   },
+  // Used by locutor profiles (/staff); the station itself has no X/web link,
+  // so `url` here is just a sensible default — callers pass `href`.
+  x: {
+    label: "X",
+    color: "#fff",
+    url: "https://x.com",
+    path: "M18.9 2H22l-7.6 8.7L23 22h-6.9l-5.4-7-6.2 7H1.4l8.1-9.3L1 2h7.1l4.9 6.4L18.9 2Zm-1.2 18h1.9L7.4 3.9H5.4L17.7 20Z",
+  },
+  web: {
+    label: "Sitio web",
+    color: "#1683C8",
+    url: "https://lamegaecuador.com",
+    path: "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm6.9 6h-2.95a15.6 15.6 0 0 0-1.38-3.56A8.03 8.03 0 0 1 18.9 8ZM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96ZM4.26 14a8.06 8.06 0 0 1 0-4h3.38a16.6 16.6 0 0 0 0 4H4.26Zm.84 2h2.95c.3 1.24.76 2.44 1.38 3.56A8.03 8.03 0 0 1 5.1 16Zm2.95-8H5.1a8.03 8.03 0 0 1 4.33-3.56A15.6 15.6 0 0 0 8.05 8ZM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82A13.6 13.6 0 0 1 12 19.96ZM14.34 14H9.66a14.4 14.4 0 0 1 0-4h4.68a14.4 14.4 0 0 1 0 4Zm.24 5.56c.62-1.12 1.08-2.32 1.38-3.56h2.95a8.03 8.03 0 0 1-4.33 3.56ZM16.36 14a16.6 16.6 0 0 0 0-4h3.38a8.06 8.06 0 0 1 0 4h-3.38Z",
+  },
 };
 
 export function SocialIcon({
   name,
   size = 20,
   style = {},
+  href,
+  label,
 }: {
   name: string;
   size?: number;
   style?: React.CSSProperties;
+  /** Overrides the station's own URL — used for per-locutor profiles. */
+  href?: string;
+  label?: string;
 }) {
   const s = SOCIAL[name];
   const [hover, setHover] = useState(false);
   if (!s) return null;
   return (
     <a
-      href={s.url}
+      href={href ?? s.url}
       target="_blank"
       rel="noopener noreferrer"
-      aria-label={s.label}
+      aria-label={label ?? s.label}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{

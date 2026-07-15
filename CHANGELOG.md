@@ -8,6 +8,31 @@ La versión mostrada en la web y el panel sale de [`lib/version.ts`](lib/version
 
 ---
 
+## [1.2.0] — 2026-07-15
+
+### Añadido
+- **Mi Perfil**: cualquier usuario del panel (incluidos los locutores) edita **su propia** foto, mini-bio (280 caracteres) y redes, y **cambia su contraseña**. El nombre, alias y programas los sigue controlando un Admin.
+- **Página pública `/staff`**: tarjetas con foto, alias, bio, redes y **los programas que conduce cada locutor**. Server-rendered (los buscadores la leen) con JSON-LD `ItemList` de `Person`.
+- Los Admin **enlazan una cuenta a su perfil de locutor** desde Usuarios; eso habilita Mi Perfil y su aparición en `/staff`.
+- Nuevo link **STAFF** en el menú y "Nuestro equipo" en el footer por defecto.
+
+### Corregido
+- **Los programas con varios conductores ahora muestran a todos.** `Show.host` era texto libre (ej. `"Joselyn Hernández & Marcos Cruz"`) y la web hacía un *match difuso por substring* que solo encontraba al primero. Ahora existe un vínculo real (`Show.hostIds`) y la tarjeta muestra los avatares de **todos** los conductores. Los programas sin locutor (`"Automático"`) siguen con el ícono de micrófono.
+- Los enlaces del menú pasaron de anclas puras (`#programacion`) a **root-relative** (`/#programacion`) para que funcionen desde sub-páginas como `/staff`.
+
+### Seguridad
+- `/api/admin/me` resuelve la fila **siempre desde la sesión**; nunca lee `id`, `role`, `active` ni `hostId` del body. Un locutor solo puede editarse a sí mismo.
+- Las fotos de perfil deben ser `/uploads/...` (no se aceptan URLs externas) y las redes solo `https://`.
+- Los locutores ahora pueden subir foto, pero **solo imágenes y máx. 8 MB** (la Galería mantiene 80 MB y video para admin/editor).
+- **El guardado de Locutores ya no borra y recrea la tabla**: sincroniza incrementalmente. `Host.id` es referenciado por `AdminUser.hostId` y `Show.hostIds`, y el borrado masivo también hubiera eliminado las bios que el cliente no reenviara.
+
+### Técnico
+- Migraciones idempotentes: `Host.bio`, `Host.socials` (JSON), `Show.hostIds` (JSON), `AdminUser.hostId`.
+- `lib/hosts.ts`: módulo **puro** (cero imports) con tipos, parsers tolerantes y validación de URLs — lo comparten cliente y servidor.
+- Backfill one-shot de `Show.hostIds` a partir del texto libre, **filtrando en memoria** (el shim compila `where: { x: null }` a `x = NULL`, que nunca matchea).
+
+---
+
 ## [1.1.0] — 2026-07-15
 
 ### Añadido

@@ -57,6 +57,14 @@ function pool(): Pool {
       .catch(() => {}); // ignore "duplicate column" once it exists
     p.query("ALTER TABLE StationConfig ADD COLUMN footer TEXT NULL")
       .catch(() => {}); // editable footer (JSON); ignore once it exists
+    // Locutor profiles (bio + socials JSON) and the real Show↔Host link
+    // (hostIds JSON array) that replaces fuzzy name matching.
+    p.query("ALTER TABLE Host ADD COLUMN bio TEXT NULL").catch(() => {});
+    p.query("ALTER TABLE Host ADD COLUMN socials TEXT NULL").catch(() => {});
+    p.query("ALTER TABLE Show ADD COLUMN hostIds TEXT NULL").catch(() => {});
+    // Links a panel account to its locutor profile. Lives on AdminUser (not Host)
+    // because PUT /api/admin/station rewrites Host rows.
+    p.query("ALTER TABLE AdminUser ADD COLUMN hostId VARCHAR(191) NULL").catch(() => {});
     // Admin panel users (email + role). Idempotent: CREATE TABLE IF NOT EXISTS.
     p.query(
       `CREATE TABLE IF NOT EXISTS AdminUser (

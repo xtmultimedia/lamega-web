@@ -26,6 +26,7 @@ export const ROLE_DESCRIPTIONS: Record<Role, string> = {
 export const SECTION_ROLES: Record<string, readonly Role[]> = {
   dashboard: ["admin", "editor", "locutor"],
   solicitudes: ["admin", "editor", "locutor"],
+  perfil: ["admin", "editor", "locutor"], // everyone edits their own profile
   programacion: ["admin", "editor"],
   locutores: ["admin", "editor"],
   playlists: ["admin", "editor"],
