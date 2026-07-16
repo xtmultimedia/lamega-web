@@ -1,5 +1,11 @@
 # Guía de contribución — La Mega 99.9 FM
 
+> 🧭 **Antes de escribir código, leé [CLAUDE.md](CLAUDE.md).** Es una página con las
+> restricciones del hosting compartido que explican las decisiones raras de este repo: el shim de
+> mysql2 (sin joins ni `contains`) y sus dos trampas verificadas, por qué toda página que lee la
+> DB necesita `force-dynamic`, el techo de procesos que ya tumbó el sitio, y la vida máxima del
+> SSE que lo evita. Esta guía cubre el *cómo* del día a día; CLAUDE.md cubre el *por qué*.
+
 ## Requisitos previos
 
 - Node.js 18 o 20 LTS
@@ -91,12 +97,27 @@ Si cambias programas o locutores:
 
 ## Cambios en el schema (tablas/columnas)
 
-El runtime es **mysql2**, no Prisma. `prisma/schema.prisma` se mantiene como fuente de verdad.
+El runtime es **mysql2**, no Prisma. `prisma/schema.prisma` es **solo documentación** del schema
+— nada en producción lo lee.
 
-```bash
-# Editar prisma/schema.prisma, luego aplicar a tu MySQL (dev o prod):
-npx prisma db push
+**En desarrollo**, `npm run setup` (`prisma db push`) crea las tablas en tu MySQL local a partir
+del schema. Cómodo, pero es una herramienta de dev.
+
+**En producción NO se corre Prisma.** El CLI no puede tocar la base del hosting compartido. Los
+cambios de schema se aplican con una **migración idempotente en el arranque**, dentro de `pool()`
+en [lib/prisma.ts](lib/prisma.ts) — el mismo patrón que ya usan `tvLive`, `footer`, `Host.bio`,
+`Show.hostIds`, `AdminUser` y `Post`:
+
+```ts
+// Columna nueva:
+p.query("ALTER TABLE Show ADD COLUMN hostIds TEXT NULL").catch(() => {});
+// Tabla nueva (+ agregala también al mapa MODELS del shim):
+p.query(`CREATE TABLE IF NOT EXISTS Post ( … )`).catch(() => {});
 ```
+
+El `.catch(() => {})` es lo que la vuelve idempotente: la segunda vez falla con "duplicate
+column" y se ignora. **Escribí siempre las dos cosas: la migración (lo que corre) y el schema
+(lo que se lee).**
 
 - El shim de `lib/prisma.ts` mapea **nombre de modelo → tabla** y **campo → columna** tal cual
   (sin `@@map`). Si agregás una columna que el shim debe escribir, asegurate de que exista en la

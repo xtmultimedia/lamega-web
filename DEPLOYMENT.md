@@ -39,11 +39,12 @@ También se puede lanzar a mano desde la pestaña **Actions** (`workflow_dispatc
   HTTPS). Las vars **sin** `NEXT_PUBLIC_` se leen en runtime del `.env` del server y no hace
   falta pasarlas. (Regresión 2026-06-14: faltó esta var → el player cayó a un `http://` y el
   audio se bloqueó por mixed-content; hay un guard en el workflow que ahora lo previene.)
-- **NPROC=80 compartido:** si la cuenta acumula procesos (p. ej. instancias `next-server`
-  colgadas de un deploy viejo en crash-loop), el `rsync` puede fallar con
-  `fork: Resource temporarily unavailable`. El workflow reintenta 6× los pasos SSH; si igual se
-  traba, pedile a FastComet (live chat) que mate los `next-server` viejos. Estado sano ≈ 3
-  instancias / ~35 de 80.
+- **NPROC=80 compartido:** si la cuenta acumula procesos, el `rsync` falla con
+  `fork: Resource temporarily unavailable` — y si se llena del todo, **se cae el sitio entero**
+  (ni siquiera sirve archivos estáticos). El workflow reintenta 6× los pasos SSH; si igual se
+  traba, pedile a FastComet (live chat) que mate los `next-server` viejos: lo hacen en minutos.
+  **Estado sano ≈ 14 de 80 con una instancia.** Ver la sección de límites más abajo: la causa de
+  fondo ya está arreglada, pero conviene saber reconocerla.
 - **Smoke-test 415:** el WAF de FastComet le responde 415 al IP del runner aunque a los
   visitantes reales les da 200. El workflow lo trata como warning-pass (el deploy ya ocurrió);
   solo falla en 5xx/timeout. (Opcional: whitelistear los rangos de IP de GitHub Actions.)
@@ -162,8 +163,21 @@ touch tmp/restart.txt                # reinicia Passenger en la próxima petici�
 Este hosting tiene límites por cuenta bajos. Reiniciar/redesplegar muchas veces seguidas en una
 sesión **acumula recursos zombie**:
 
-- **Procesos (NPROC = 80):** cada reinicio fallido deja procesos node colgados → `cagefs_enter:
-  Unable to fork` (la terminal y el panel dejan de funcionar).
+- **Procesos (NPROC = 80):** NPROC cuenta **threads**, no solo procesos, y cada instancia de
+  `next-server` cuesta **~14**. O sea que **la cuenta se bloquea a las ~5-6 instancias**: primero
+  `cagefs_enter: Unable to fork` (la terminal y el panel dejan de responder) y después el sitio
+  entero deja de contestar.
+
+  **Causa raíz — encontrada y arreglada el 2026-07-16 (v1.3):** el stream SSE de
+  `/api/radio/events` no terminaba nunca, y Passenger apaga la instancia vieja **esperando a que
+  terminen las peticiones en curso**. Como una petición SSE no termina jamás, **cada despliegue
+  dejaba viva la instancia anterior** (hubo procesos de más de 22 horas). Se cayó el sitio tres
+  veces ese día. Ahora el stream tiene vida máxima (`MAX_STREAM_MS`) y el cliente reconecta solo
+  — **no le quites ese límite.**
+
+  FastComet confirmó (ticket EAH-184-53458) que **`PassengerMaxPoolSize` no se puede aplicar a
+  una sola cuenta** en hosting compartido: es configuración de servidor. No vale la pena volver a
+  pedirlo.
 - **Conexiones MySQL (`max_user_connections`):** cada reinicio deja conexiones "dormidas" →
   `ER_TOO_MANY_USER_CONNECTIONS` y la DB se cae para todo el sitio.
 

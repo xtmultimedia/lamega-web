@@ -224,7 +224,26 @@ Luego, cada cambio se propaga inmediatamente:
 Se envía un comentario heartbeat (`: heartbeat`) cada 25 s para mantener viva
 la conexión.
 
+### ⚠️ El servidor cierra la conexión cada ~10 minutos — tu cliente debe reconectar
+
+**Esto es intencional y no es un error.** Cada conexión vive ~10 min (más hasta 90 s de azar) y
+después el servidor la **cierra limpiamente**. Al reconectar recibís de nuevo el `snapshot`
+completo, así que **no se pierde estado**.
+
+Existe porque el sitio corre en hosting compartido con Passenger: al desplegar, Passenger apaga
+la instancia vieja **esperando a que terminen las peticiones en curso**, y un SSE que no termina
+nunca la dejaba viva para siempre hasta agotar el límite de procesos de la cuenta y tumbar el
+sitio. Detalle en [ARCHITECTURE.md](ARCHITECTURE.md) y [DEPLOYMENT.md](DEPLOYMENT.md).
+
+**Qué significa para tu cliente:** envolvé la lectura del stream en un bucle que reconecte
+cuando termine. `radio_client_example.py` ya lo hace — cuando el servidor cierra, el generador
+de `sseclient` simplemente termina (sin excepción), el `for` sale y el `while` externo vuelve a
+conectar. Si escribís tu propio cliente, **no trates el cierre como un fallo**.
+
+`EventSource` del navegador reconecta solo por especificación, así que el sitio no necesita nada.
+
 ```bash
+# -N para no bufferear; la conexión va a cerrarse sola a los ~10 min
 curl -N http://localhost:3000/api/radio/events
 ```
 
@@ -240,6 +259,15 @@ No son parte de la API de automatización, pero emiten los eventos anteriores:
   `AdCampaign` y envía email al equipo comercial (Resend).
 - `PATCH /api/admin/requests` *(sesión admin)* — aprobar (`approved`, entra a
   la cola) o rechazar (`rejected`) una solicitud; emite `queue_update`.
+- `GET /api/station` — público. Programación, locutores, playlists y galería que
+  consume la web.
+- `GET /api/posts?take=N` — público. Notas **publicadas** de El Megáfono (nunca
+  borradores, y sin el cuerpo). Alimenta la franja de la portada. `take` va de 1
+  a 24, por defecto 3.
+- `/api/admin/*` *(sesión NextAuth + rol)* — el resto del panel: `posts` (blog),
+  `me` (perfil propio), `users` (altas, roles, restablecer contraseña), `station`,
+  `config`, `upload`. Todas aplican el rol **en el servidor** (401/403); ver
+  [ARCHITECTURE.md](ARCHITECTURE.md#autenticación).
 
 ## Ciclo de vida de una solicitud
 

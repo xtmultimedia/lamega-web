@@ -14,9 +14,13 @@
 ┌─────────────────────────────────────────────────────────────────┐
 │                    Next.js 14 App Router                        │
 │                                                                 │
-│  /        Landing pública                                       │
-│  /pide    Formulario (pide canción + publicidad)                │
-│  /admin   Dashboard (protegido por NextAuth)                    │
+│  /             Landing pública (+ franja de El Megáfono)         │
+│  /megafono     Blog: índice paginado           (force-dynamic)  │
+│  /megafono/*   Nota individual por slug        (force-dynamic)  │
+│  /staff        El equipo de locutores          (force-dynamic)  │
+│  /pide         Formulario (pide canción + publicidad)           │
+│  /admin        Dashboard (protegido por NextAuth)               │
+│  /admin/invite Crear/restablecer contraseña (público, noindex)  │
 │                                                                 │
 │  ┌──────────────────────────────────────────────────────────┐   │
 │  │                    API Routes                            │   │
@@ -27,9 +31,15 @@
 │  │  /api/radio/queue        GET / POST (dequeue)            │   │
 │  │  /api/radio/stats        GET / POST (listeners)          │   │
 │  │  /api/radio/emergency    POST — modo emergencia          │   │
+│  │  /api/radio/tv           POST — Mega TV al aire          │   │
 │  │  /api/nowplaying         GET — ICY metadata poller       │   │
+│  │  /api/station            GET — programación + locutores  │   │
+│  │  /api/posts              GET — notas publicadas          │   │
 │  │  /api/requests           POST — nueva solicitud pública  │   │
 │  │  /api/campaigns          POST — lead publicitario        │   │
+│  │  /api/admin/posts[/id]   CRUD del blog (admin/editor)    │   │
+│  │  /api/admin/me           GET/PUT — perfil propio         │   │
+│  │  /api/admin/users[/id]   Alta / rol / reset (solo admin) │   │
 │  │  /api/admin/requests     PATCH — aprobar / rechazar      │   │
 │  │  /api/admin/config       GET / PATCH — configuración     │   │
 │  │  /api/alexa              POST — Alexa AudioPlayer skill  │   │
@@ -46,6 +56,7 @@
 │  emit()          │   │  NowPlaying     CurrentProgram           │
 │  subscribe()     │   │  RadioStats     StationState             │
 │                  │   │  StationConfig  Show  Host  Playlist     │
+│                  │   │  MediaItem      AdminUser       Post     │
 └──────────────────┘   └──────────────────────────────────────────┘
 ```
 
@@ -146,7 +157,30 @@ const unsub = subscribe((event, data) => {
 })
 ```
 
-**Limitación:** el bus es en memoria del proceso. En producción con un único proceso Node.js (Railway, FastComet, VPS) funciona perfectamente. En entornos serverless multi-instancia (Vercel) los eventos pueden no propagarse entre instancias. Para escalar horizontalmente, reemplaza el bus con Redis Pub/Sub o un servicio como Ably/Pusher.
+**Limitación:** el bus vive **en memoria de cada proceso**. Funciona mientras haya **una sola**
+instancia Node.js. Con varias, un evento emitido en una instancia no llega a los clientes
+conectados a las otras. Para escalar horizontalmente hay que reemplazarlo por Redis Pub/Sub o un
+servicio tipo Ably/Pusher.
+
+### ⚠️ Vida máxima del stream (no la quites)
+
+`/api/radio/events` **cierra cada conexión a los ~10 min** (más hasta 90 s de azar) y el cliente
+reconecta solo, rehidratándose con el `snapshot` que la ruta manda al conectar. No es una
+prolijidad: **es lo que mantiene el sitio en pie.**
+
+El stream SSE no termina nunca por sí mismo, y el heartbeat de 25 s impide activamente que
+expire. Al desplegar (`touch tmp/restart.txt`), Passenger levanta una instancia nueva y **apaga
+la vieja con elegancia: esperando a que terminen las peticiones en curso**. Una petición SSE no
+termina jamás → la instancia vieja quedaba viva **para siempre**, sostenida por su propio
+heartbeat, ocupando ~14 procesos del límite de **NPROC=80** de la cuenta. Cuatro o cinco
+despliegues y **se caía el sitio entero** (pasó tres veces el 2026-07-16; había procesos de más
+de 22 horas).
+
+El azar del cierre importa: sin él, todos los clientes de una misma oleada reconectarían en el
+mismo instante.
+
+Esto además acota el problema del párrafo anterior: un oyente atado a una instancia superada
+**nunca volvía a recibir el "ahora suena"** — se le congelaba el ticker hasta recargar.
 
 ## Autenticación
 
@@ -177,6 +211,35 @@ La sesión se guarda en una cookie `httpOnly` firmada con `NEXTAUTH_SECRET`.
 - **Invitaciones:** el Admin invita por email; se guarda `inviteTokenHash` (sha256) con
   vencimiento a 7 días y un solo uso. El invitado crea su contraseña en `/admin/invite`
   (público, `noindex`). El email va por Resend, pero el link también se muestra en el panel.
+
+## EL MEGÁFONO — el blog (desde v1.3)
+
+```
+Panel (admin/editor)                      Público
+      │                                      │
+  MegafonoView                          /megafono          (índice paginado)
+      │  PostEditor (TipTap)            /megafono/<slug>   (la nota)
+      │                                 /  (franja: 3 últimas → /api/posts)
+      ▼                                      ▲
+POST/PATCH /api/admin/posts[/id]             │
+      │                                      │
+      │  ⚠️ lib/sanitize.ts  ← SANITIZA ACÁ, al ESCRIBIR
+      ▼                                      │
+   Post (MySQL) ──── solo HTML limpio ───────┘
+                     status: draft | published
+```
+
+**Por qué se sanitiza al escribir y no al renderizar:** así la base **solo contiene marcado
+limpio**. Si se sanitizara al leer, cualquier vista futura que se olvide de llamarlo abriría un
+agujero de XSS, y cada render pagaría el costo. Detalle de la lista blanca en
+[SECURITY.md](SECURITY.md) y en `docs/superpowers/specs/2026-07-16-megafono-blog-design.md`.
+
+**A diferencia de Programación/Playlists, `Post` usa CRUD real por fila**: la tabla crece sin
+techo y cada fila **es una URL pública** — borrar y recrear rompería enlaces ya compartidos e
+indexados. Lo mismo vale para `Host`, cuyos ids referencian `AdminUser.hostId` y `Show.hostIds`.
+
+`publishedAt` se estampa **solo en la primera publicación**: el índice ordena por esa fecha, así
+que refrescarla haría que corregir una errata saltara la nota al tope.
 
 ## Autenticación de la API (radio-auth.ts)
 
@@ -232,10 +295,19 @@ marca generada en build). `public/llms.txt` resume la estación para asistentes 
 
 Para soportar mayor carga o equipos más grandes, los cambios recomendados son:
 
-1. **Redis Pub/Sub** en lugar del bus en memoria → permite múltiples instancias Node.js
-2. **NextAuth con base de datos** → soporta múltiples usuarios admin con roles
-3. **Migraciones SQL versionadas** (carpeta `migrations/` + un runner) en lugar de la migración
+1. **Redis Pub/Sub** en lugar del bus en memoria → recién ahí se pueden correr varias instancias
+   Node.js sin que se pierdan eventos entre ellas (ver la limitación arriba). Es el requisito
+   previo a cualquier escalado horizontal.
+2. **Migraciones SQL versionadas** (carpeta `migrations/` + un runner) en lugar de la migración
    idempotente en arranque → historial de schema en git. (Hoy el runtime es mysql2, no Prisma.)
-4. **CDN para assets** (Cloudflare, CloudFront) → imágenes de locutores, logos
+3. **Tests automatizados.** Hoy no hay runner. El candidato más urgente es `lib/sanitize.ts`
+   (frontera de seguridad, hoy verificada a mano). Blocker: importa `server-only`, así que hace
+   falta un alias a un stub en la config del runner.
+4. **CDN para assets** (Cloudflare, CloudFront) → imágenes de locutores, portadas de las notas
 5. **Monitoreo** (Sentry para errores, Grafana/Datadog para métricas del stream)
 6. **Rate limiting** en `/api/requests` y `/api/campaigns` → evitar spam de formularios
+7. **Salir del hosting compartido** (Railway/Render/Fly o un VPS) → sin el techo de NPROC=80, que
+   es la restricción que más ha condicionado este diseño.
+
+> **Hecho desde que se escribió esta lista:** cuentas admin en base de datos con roles e
+> invitaciones (v1.1) y perfiles de locutor (v1.2).

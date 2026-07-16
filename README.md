@@ -3,6 +3,11 @@
 **Versión: v1.3** · en vivo en [lamegaecuador.com](https://lamegaecuador.com)
 (la versión mostrada en la web y el panel sale de [`lib/version.ts`](lib/version.ts))
 
+> 🧭 **¿Vas a tocar el código?** Leé primero **[CLAUDE.md](CLAUDE.md)**: resume en una página las
+> restricciones del hosting que explican las decisiones raras de este repo (el shim de mysql2 y
+> sus trampas, por qué toda página con DB necesita `force-dynamic`, el límite de procesos, la
+> vida máxima del SSE). Te ahorra los bugs que ya cometimos.
+
 Aplicación web de producción para **La Mega 99.9 FM**, la radio líder de Imbabura, Ecuador. Emite desde Ibarra las 24 horas con pop, urbano y los hits que mueven la provincia.
 
 - **Frontend:** Next.js 14 (App Router, TypeScript) + diseño dark-stage glassmorphism (Saira / Sora / Space Mono)
