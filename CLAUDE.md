@@ -85,6 +85,24 @@ verifica. **No compiles en el servidor** (no puede). Detalle en [DEPLOYMENT.md](
 ⚠️ **No corras `next build` con el dev server prendido**: se pisan en `.next` y el build falla
 con errores que no tienen nada que ver (`Cannot find module for page: …`).
 
+## Cómo trabajamos (Galo + Claude)
+
+Galo prefiere que **conduzcas vos** las plataformas externas —cPanel/FastComet, GitHub, Resend,
+Railway, DNS— con Claude in Chrome o computer use, en vez de pasarle instrucciones para que las
+siga a mano. Si podés hacerlo, hacelo; no le dictes pasos.
+
+**Lo hace Claude:** navegar paneles, leer configuraciones, diagnosticar, preparar y redactar los
+cambios (registros DNS, settings, workflows), abrir y revisar tickets, y dejar todo listo hasta
+el clic final.
+
+**Lo hace Galo, siempre:** escribir contraseñas y credenciales, crear cuentas, autorizar llaves
+SSH/OAuth, y **dar el OK antes de cualquier acción irreversible o que salga al mundo** (enviar,
+publicar, borrar, pagar, cambiar accesos). No es trámite: si Claude se equivoca borrando un
+registro DNS, con Galo mirando se caza en el momento.
+
+Antes de una acción de esas: decí exactamente qué va a pasar y esperá el sí. Una aprobación vale
+para esa acción, no para las siguientes.
+
 ## Convenciones
 
 - **La web y el panel están en español** (es-EC, voseo). El código y los comentarios, en inglés.
