@@ -28,6 +28,7 @@ export const SECTION_ROLES: Record<string, readonly Role[]> = {
   solicitudes: ["admin", "editor", "locutor"],
   perfil: ["admin", "editor", "locutor"], // everyone edits their own profile
   programacion: ["admin", "editor"],
+  megafono: ["admin", "editor"],
   locutores: ["admin", "editor"],
   playlists: ["admin", "editor"],
   galeria: ["admin", "editor"],

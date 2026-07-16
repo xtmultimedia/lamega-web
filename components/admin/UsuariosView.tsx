@@ -59,6 +59,8 @@ function StatusPill({ u }: { u: PanelUser }) {
 
 function InviteLink({ url, onClose }: { url: string; onClose: () => void }) {
   const [copied, setCopied] = useState(false);
+  // The link itself says which flow produced it — no extra state to keep in sync.
+  const isReset = url.includes("reset=1");
   return (
     <div
       style={{
@@ -67,10 +69,12 @@ function InviteLink({ url, onClose }: { url: string; onClose: () => void }) {
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#5fe08a", fontSize: 14, marginBottom: 8 }}>
-        <Icon name="check-circle" size={16} /> Invitación creada
+        <Icon name="check-circle" size={16} /> {isReset ? "Enlace de restablecimiento creado" : "Invitación creada"}
       </div>
       <div style={{ fontSize: 13, color: "var(--fg-2)", marginBottom: 10 }}>
-        Compartí este enlace si el email no llega (vence en 7 días, un solo uso):
+        {isReset
+          ? "Compartí este enlace si el email no llega. Vence en 7 días, un solo uso, y la contraseña actual sigue valiendo hasta que lo use:"
+          : "Compartí este enlace si el email no llega (vence en 7 días, un solo uso):"}
       </div>
       <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
         <input readOnly value={url} style={{ ...INPUT, flex: 1, minWidth: 220, fontFamily: "var(--font-mono)", fontSize: 12 }} />
@@ -286,10 +290,20 @@ export function UsuariosView() {
                 ))}
               </select>
               <div style={{ display: "flex", gap: 8 }}>
-                {u.pending && (
+                {/* Mutually exclusive: someone with no password yet gets the
+                    invite resent; someone who has one gets a reset link. */}
+                {u.pending ? (
                   <IconBtn
                     icon="send" color="var(--red-bright)" title="Reenviar invitación"
                     onClick={() => patch(u.id, { resend_invite: true }, `Invitación reenviada a ${u.email}.`)}
+                  />
+                ) : (
+                  <IconBtn
+                    icon="key-round" color="#16C8E8" title="Restablecer contraseña"
+                    onClick={() => {
+                      if (!confirm(`¿Generar un enlace para que ${u.name} elija una contraseña nueva?\n\nSu contraseña actual sigue funcionando hasta que use el enlace.`)) return;
+                      patch(u.id, { reset_password: true }, `Enlace de restablecimiento generado para ${u.email}.`);
+                    }}
                   />
                 )}
                 <IconBtn

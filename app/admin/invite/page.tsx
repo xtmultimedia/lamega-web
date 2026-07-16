@@ -3,7 +3,7 @@
 // Public invite-acceptance page: the invited person sets their first password.
 // Styled to match /admin/login.
 
-import React, { Suspense, useState } from "react";
+import React, { Suspense, useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Icon } from "@/components/ui";
 
@@ -18,9 +18,16 @@ const LABEL: React.CSSProperties = {
   color: "var(--fg-2)", fontWeight: 700, marginBottom: 9,
 };
 
-function InviteForm() {
+function InviteForm({ onMode }: { onMode: (reset: boolean) => void }) {
   const router = useRouter();
-  const token = useSearchParams().get("token") || "";
+  const params = useSearchParams();
+  const token = params.get("token") || "";
+  // Cosmetic only: the accept endpoint treats invites and resets identically.
+  const isReset = params.get("reset") === "1";
+
+  useEffect(() => {
+    onMode(isReset);
+  }, [isReset, onMode]);
   const [pass, setPass] = useState("");
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
@@ -54,7 +61,9 @@ function InviteForm() {
   if (!token) {
     return (
       <div style={{ color: "var(--red-bright)", textAlign: "center", fontSize: 14 }}>
-        Falta el enlace de invitación. Pedile al administrador que te lo reenvíe.
+        {isReset
+          ? "Falta el enlace. Pedile al administrador que te genere uno nuevo."
+          : "Falta el enlace de invitación. Pedile al administrador que te lo reenvíe."}
       </div>
     );
   }
@@ -64,7 +73,7 @@ function InviteForm() {
       <div style={{ textAlign: "center", padding: 10 }}>
         <Icon name="check-circle" size={44} color="var(--green)" />
         <div className="display" style={{ fontSize: 20, color: "#fff", margin: "14px 0 6px" }}>
-          ¡Listo! Tu acceso está activo
+          {isReset ? "¡Listo! Contraseña actualizada" : "¡Listo! Tu acceso está activo"}
         </div>
         <div style={{ fontSize: 14, color: "var(--fg-2)" }}>
           Te llevamos al login para que entres con tu email…
@@ -76,7 +85,9 @@ function InviteForm() {
   return (
     <form onSubmit={submit}>
       <div style={{ fontSize: 14, color: "var(--fg-2)", marginBottom: 20, lineHeight: 1.5 }}>
-        Creá tu contraseña para entrar al panel de La Mega 99.9.
+        {isReset
+          ? "Elegí una contraseña nueva para tu cuenta del panel de La Mega 99.9."
+          : "Creá tu contraseña para entrar al panel de La Mega 99.9."}
       </div>
       <label style={{ display: "block", marginBottom: 18 }}>
         <span className="mono" style={LABEL}>Nueva contraseña</span>
@@ -106,13 +117,17 @@ function InviteForm() {
           letterSpacing: "0.06em", cursor: busy ? "default" : "pointer", opacity: busy ? 0.7 : 1,
         }}
       >
-        {busy ? "Activando…" : "Activar mi acceso"}
+        {busy ? (isReset ? "Guardando…" : "Activando…") : isReset ? "Guardar contraseña" : "Activar mi acceso"}
       </button>
     </form>
   );
 }
 
 export default function AdminInvitePage() {
+  // The heading lives outside <Suspense>, but only the inner form can read the
+  // query string — so the form reports the mode back up.
+  const [isReset, setIsReset] = useState(false);
+  const onMode = useCallback((v: boolean) => setIsReset(v), []);
   return (
     <div
       style={{
@@ -129,7 +144,11 @@ export default function AdminInvitePage() {
             style={{ height: 52, margin: "0 auto 16px", filter: "drop-shadow(0 6px 22px rgba(227,30,36,0.5))" }}
           />
           <h1 className="display" style={{ fontSize: 30, color: "#fff", margin: 0 }}>
-            Activar <span style={{ color: "var(--red)" }}>acceso</span>
+            {isReset ? (
+              <>Nueva <span style={{ color: "var(--red)" }}>contraseña</span></>
+            ) : (
+              <>Activar <span style={{ color: "var(--red)" }}>acceso</span></>
+            )}
           </h1>
           <div className="mono" style={{ fontSize: 11, letterSpacing: "0.22em", color: "var(--fg-3)", marginTop: 10, textTransform: "uppercase" }}>
             La Mega 99.9 · Panel
@@ -143,7 +162,7 @@ export default function AdminInvitePage() {
           }}
         >
           <Suspense fallback={<div style={{ color: "var(--fg-3)", fontSize: 14 }}>Cargando…</div>}>
-            <InviteForm />
+            <InviteForm onMode={onMode} />
           </Suspense>
         </div>
       </div>

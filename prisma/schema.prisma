@@ -172,6 +172,24 @@ model StationConfig {
   updatedAt   DateTime @updatedAt
 }
 
+// EL MEGÁFONO — the blog. Real per-row CRUD (unlike Show/Playlist, which the
+// admin bulk-replaces): rows own public URLs at /megafono/<slug>, so they can
+// never be delete-and-recreated.
+model Post {
+  id          String    @id @default(uuid())
+  slug        String    @unique // public URL key
+  title       String
+  excerpt     String? // shown on the homepage strip, the index and in Google
+  contentHtml String?   @db.MediumText // sanitized on WRITE by lib/sanitize.ts — never store raw editor HTML
+  coverUrl    String? // /uploads/... only (isSafeUploadUrl)
+  status      String    @default("draft") // "draft" | "published"
+  publishedAt DateTime? // stamped on FIRST publish only, so edits don't reorder the index
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status, publishedAt])
+}
+
 // Singleton (id = 1): emergency mode flag shown site-wide + dashboard.
 model StationState {
   id               Int      @id @default(1)

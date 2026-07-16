@@ -36,6 +36,8 @@ export const BADGE: Record<string, { c: string; label: string; pulse?: boolean }
   activa: { c: "#1DB954", label: "Activa" },
   pausada: { c: "#6B6B72", label: "Pausada" },
   nueva: { c: "#16C8E8", label: "Nueva" },
+  borrador: { c: "#E0A82E", label: "Borrador" },
+  publicada: { c: "#1DB954", label: "Publicada" },
 };
 
 export function Badge({ kind, children }: { kind: string; children?: React.ReactNode }) {

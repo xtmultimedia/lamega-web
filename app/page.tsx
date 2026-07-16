@@ -6,6 +6,7 @@ import { Hero } from "@/components/landing/Hero";
 import { Ticker } from "@/components/landing/Ticker";
 import { MegaTV } from "@/components/landing/MegaTV";
 import { Programacion } from "@/components/landing/Programacion";
+import { Megafono } from "@/components/landing/Megafono";
 import { Playlists } from "@/components/landing/Playlists";
 import { MegaApp } from "@/components/landing/MegaApp";
 import { Social } from "@/components/landing/Social";
@@ -25,6 +26,7 @@ export default function HomePage() {
       <Ticker />
       <MegaTV />
       <Programacion />
+      <Megafono />
       <Playlists />
       <MegaApp />
       <Social />

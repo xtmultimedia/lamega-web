@@ -65,6 +65,25 @@ function pool(): Pool {
     // Links a panel account to its locutor profile. Lives on AdminUser (not Host)
     // because PUT /api/admin/station rewrites Host rows.
     p.query("ALTER TABLE AdminUser ADD COLUMN hostId VARCHAR(191) NULL").catch(() => {});
+    // EL MEGÁFONO (blog). Idempotent: CREATE TABLE IF NOT EXISTS.
+    // `slug` is UNIQUE because it's the public URL key (/megafono/<slug>).
+    // publishedAt is NULL while a post is a draft, and is stamped once on first
+    // publish so re-editing never reshuffles the public ordering.
+    p.query(
+      `CREATE TABLE IF NOT EXISTS Post (
+        id VARCHAR(191) NOT NULL PRIMARY KEY,
+        slug VARCHAR(191) NOT NULL UNIQUE,
+        title VARCHAR(200) NOT NULL,
+        excerpt VARCHAR(300) NULL,
+        contentHtml MEDIUMTEXT NULL,
+        coverUrl VARCHAR(255) NULL,
+        status VARCHAR(16) NOT NULL DEFAULT 'draft',
+        publishedAt DATETIME NULL,
+        createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        INDEX Post_status_publishedAt_idx (status, publishedAt)
+      )`,
+    ).catch(() => {});
     // Admin panel users (email + role). Idempotent: CREATE TABLE IF NOT EXISTS.
     p.query(
       `CREATE TABLE IF NOT EXISTS AdminUser (
@@ -104,6 +123,7 @@ const MODELS: Record<string, Meta> = {
   stationConfig: { table: "StationConfig", idType: "int", updatedAt: true },
   stationState: { table: "StationState", idType: "int", updatedAt: true },
   adminUser: { table: "AdminUser", idType: "uuid", createdAt: true, updatedAt: true },
+  post: { table: "Post", idType: "uuid", createdAt: true, updatedAt: true },
 };
 
 // ── SQL helpers ───────────────────────────────────────────────────────────
@@ -205,11 +225,19 @@ function model(meta: Meta, getRunner: () => Runner) {
       return rows[0] ?? null;
     },
 
-    async findMany(args: { where?: Record<string, any>; orderBy?: any; take?: number } = {}) {
+    async findMany(args: { where?: Record<string, any>; orderBy?: any; take?: number; skip?: number } = {}) {
       const r = getRunner();
       const w = compileWhere(args.where);
       const ob = compileOrderBy(args.orderBy);
-      const limit = typeof args.take === "number" ? ` LIMIT ${Math.max(0, Math.floor(args.take))}` : "";
+      const take = typeof args.take === "number" ? Math.max(0, Math.floor(args.take)) : null;
+      const skip = typeof args.skip === "number" ? Math.max(0, Math.floor(args.skip)) : 0;
+      // MySQL has no bare OFFSET — it only parses as part of LIMIT. When a caller
+      // skips without taking, emit MySQL's documented "rest of the rows" idiom
+      // (2^64-1) rather than dropping the offset silently.
+      let limit = "";
+      if (take !== null) limit = ` LIMIT ${take}`;
+      else if (skip > 0) limit = " LIMIT 18446744073709551615";
+      if (skip > 0) limit += ` OFFSET ${skip}`;
       return run(r, `SELECT * FROM ${T}${w.sql}${ob}${limit}`, w.params);
     },
 

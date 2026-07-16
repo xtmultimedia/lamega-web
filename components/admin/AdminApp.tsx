@@ -11,12 +11,16 @@ import { APP_VERSION } from "@/lib/version";
 import { canAccessSection, ROLE_LABELS, type Role } from "@/lib/roles";
 import { UsuariosView } from "./UsuariosView";
 import { PerfilView } from "./PerfilView";
+import { MegafonoView } from "./MegafonoView";
 import { DashboardView, SolicitudesView, PublicidadView, ConfiguracionView } from "./views";
 import { ProgramacionView, LocutoresView, PlaylistsView, GaleriaView } from "./station-views";
 
 const ADM_NAV = [
   { id: "dashboard", label: "Dashboard", icon: "layout-dashboard" },
   { id: "programacion", label: "Programación", icon: "calendar-days" },
+  // "megaphone" is taken by Publicidad; the blog gets its own icon so the two
+  // don't read as the same section.
+  { id: "megafono", label: "El Megáfono", icon: "newspaper" },
   { id: "locutores", label: "Locutores", icon: "mic" },
   { id: "playlists", label: "Playlists", icon: "list-music" },
   { id: "galeria", label: "Galería", icon: "image" },
@@ -207,6 +211,7 @@ const VIEWS: Record<string, React.ComponentType<any>> = {
   dashboard: DashboardView,
   solicitudes: SolicitudesView,
   programacion: ProgramacionView,
+  megafono: MegafonoView,
   publicidad: PublicidadView,
   locutores: LocutoresView,
   playlists: PlaylistsView,

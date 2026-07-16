@@ -3,7 +3,10 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { ROLES } from "@/lib/roles";
 import { currentUserId, requireRole } from "@/lib/auth-guard";
-import { generateInviteToken, hashInviteToken, inviteExpiry, inviteUrl, sendInviteEmail } from "@/lib/invites";
+import {
+  generateInviteToken, hashInviteToken, inviteExpiry, inviteUrl,
+  sendInviteEmail, sendPasswordResetEmail,
+} from "@/lib/invites";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +30,7 @@ const patchSchema = z.object({
   role: z.enum(ROLES).optional(),
   active: z.boolean().optional(),
   resend_invite: z.boolean().optional(),
+  reset_password: z.boolean().optional(),
   // links this account to its locutor profile; null unlinks
   hostId: z.string().max(191).nullable().optional(),
 });
@@ -65,6 +69,31 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       role: user.role as "admin" | "editor" | "locutor",
       url,
     });
+    return NextResponse.json({ ok: true, invite_url: url, emailed });
+  }
+
+  // Password reset for someone who ALREADY has a password (resend_invite above
+  // refuses those). Reuses the invite token machinery: random 32 bytes, stored
+  // sha256-hashed, 7-day expiry, single-use — /api/admin/invite/accept simply
+  // writes whatever password the token authorizes.
+  if (parsed.data.reset_password) {
+    // Guard: accept sets `active: true`, so resetting a DEACTIVATED account
+    // would quietly let it back in. Make reactivation an explicit, separate act.
+    if (!user.active) {
+      return NextResponse.json(
+        { error: "Esa cuenta está desactivada. Activala primero y después restablecé la contraseña." },
+        { status: 400 },
+      );
+    }
+    const token = generateInviteToken();
+    await prisma.adminUser.update({
+      where: { id: user.id },
+      // The old password stays valid until the link is used: if it were cleared
+      // here, a reset the person never completes would lock them out.
+      data: { inviteTokenHash: hashInviteToken(token), inviteExpiresAt: inviteExpiry() },
+    });
+    const url = inviteUrl(token, new URL(req.url).origin, { reset: true });
+    const emailed = await sendPasswordResetEmail({ to: user.email, name: user.name, url });
     return NextResponse.json({ ok: true, invite_url: url, emailed });
   }
 

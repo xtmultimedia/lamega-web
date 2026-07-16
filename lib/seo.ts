@@ -110,6 +110,52 @@ export function staffJsonLd(
   };
 }
 
+// EL MEGÁFONO — the blog index, as an ItemList of BlogPosting stubs.
+export function megafonoJsonLd(posts: { slug: string; title: string; publishedAt: string | null }[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Blog",
+    "@id": `${SITE.url}/megafono#blog`,
+    name: `El Megáfono — ${SITE.name}`,
+    description: `Noticias y novedades de ${SITE.name}, ${SITE.city}, ${SITE.region}.`,
+    url: `${SITE.url}/megafono`,
+    inLanguage: "es-EC",
+    publisher: { "@id": `${SITE.url}/#radiostation` },
+    blogPost: posts.map((p) => ({
+      "@type": "BlogPosting",
+      headline: p.title,
+      url: `${SITE.url}/megafono/${p.slug}`,
+      ...(p.publishedAt ? { datePublished: p.publishedAt } : {}),
+    })),
+  };
+}
+
+// A single note. `author`/`publisher` both point at the station: posts are
+// signed by El Megáfono, not by individual people.
+export function blogPostingJsonLd(post: {
+  slug: string;
+  title: string;
+  excerpt?: string | null;
+  coverUrl?: string | null;
+  publishedAt: string | null;
+}) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "@id": `${SITE.url}/megafono/${post.slug}#post`,
+    headline: post.title,
+    url: `${SITE.url}/megafono/${post.slug}`,
+    mainEntityOfPage: `${SITE.url}/megafono/${post.slug}`,
+    inLanguage: "es-EC",
+    ...(post.excerpt ? { description: post.excerpt } : {}),
+    ...(post.coverUrl ? { image: `${SITE.url}${post.coverUrl}` } : {}),
+    ...(post.publishedAt ? { datePublished: post.publishedAt, dateModified: post.publishedAt } : {}),
+    author: { "@id": `${SITE.url}/#radiostation` },
+    publisher: { "@id": `${SITE.url}/#radiostation` },
+    isPartOf: { "@id": `${SITE.url}/megafono#blog` },
+  };
+}
+
 export function webSiteJsonLd() {
   return {
     "@context": "https://schema.org",

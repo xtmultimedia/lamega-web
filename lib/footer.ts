@@ -21,6 +21,7 @@ export const DEFAULT_FOOTER: FooterColumn[] = [
       { label: "Quiénes somos" },
       { label: "Historia" },
       { label: "Nuestro equipo", url: "/staff" },
+      { label: "El Megáfono", url: "/megafono" },
       { label: "Trabaja con nosotros" },
       { label: "Prensa" },
     ],

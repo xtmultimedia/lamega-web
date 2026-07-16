@@ -1,6 +1,6 @@
 # La Mega 99.9 FM — Sitio web oficial
 
-**Versión: v1.2** · en vivo en [lamegaecuador.com](https://lamegaecuador.com)
+**Versión: v1.3** · en vivo en [lamegaecuador.com](https://lamegaecuador.com)
 (la versión mostrada en la web y el panel sale de [`lib/version.ts`](lib/version.ts))
 
 Aplicación web de producción para **La Mega 99.9 FM**, la radio líder de Imbabura, Ecuador. Emite desde Ibarra las 24 horas con pop, urbano y los hits que mueven la provincia.
@@ -9,6 +9,8 @@ Aplicación web de producción para **La Mega 99.9 FM**, la radio líder de Imba
 - **Tiempo real:** Server-Sent Events (`/api/radio/events`) + lectura automática de metadatos ICY del stream
 - **Base de datos:** MySQL, accedida vía un cliente liviano **mysql2** (`lib/prisma.ts` — shim con API compatible con Prisma; ver nota abajo)
 - **Mega TV:** player de video en vivo embebido de **OneStream Live** (Universal Embed Player), con auto mostrar/ocultar según la señal
+- **EL MEGÁFONO:** blog de noticias (`/megafono`) con editor visual **TipTap**, borradores, imagen destacada y firma de marca. El HTML se **sanitiza en el servidor al guardar** (`lib/sanitize.ts`), nunca al renderizar
+- **STAFF:** página pública del equipo (`/staff`) con foto, bio, redes y los programas que conduce cada locutor
 - **Footer editable** desde `/admin` → Configuración (columnas y enlaces con URL opcional)
 - **SEO (buscadores + IA):** metadata + Open Graph, JSON-LD `RadioStation`, `robots.txt` que permite crawlers de IA, `sitemap.xml`, web manifest, imagen OG de marca y `llms.txt` (fuente única en `lib/seo.ts`)
 - **Auth:** NextAuth.js con **cuentas individuales (email + contraseña, bcrypt) y roles** — Admin / Editor / Locutor — e invitaciones por email. Las credenciales del `.env` siguen valiendo como acceso de emergencia
@@ -21,7 +23,10 @@ Aplicación web de producción para **La Mega 99.9 FM**, la radio líder de Imba
 
 | Ruta | Descripción |
 |---|---|
-| `/` | Landing: hero con player en vivo, ticker, Mega TV, programación, playlists, app, redes, mini-player sticky |
+| `/` | Landing: hero con player en vivo, ticker, Mega TV, programación, **franja de El Megáfono**, playlists, app, redes, mini-player sticky |
+| `/megafono` | **EL MEGÁFONO**: índice de noticias, paginado |
+| `/megafono/<enlace>` | Una nota. Los borradores y los enlaces inexistentes dan 404 |
+| `/staff` | El equipo: locutores con foto, bio, redes y sus programas |
 | `/pide` | Formulario público: pide tu canción · publicita en La Mega |
 | `/pide/print` | Versión imprimible del formulario |
 | `/admin` | Dashboard en tiempo real (login requerido) |
@@ -149,7 +154,10 @@ app/
     requests/       Formulario "pide tu canción"
     campaigns/      Formulario "publicita" (+ email Resend)
     admin/          Endpoints del dashboard (sesión NextAuth)
+    posts/          Feed público de notas publicadas (franja de la portada)
   admin/            Dashboard + login
+  megafono/         EL MEGÁFONO: índice + [slug] de cada nota (force-dynamic)
+  staff/            Página pública del equipo (force-dynamic)
   pide/             Formulario público
   robots.ts         /robots.txt (permite crawlers de IA, bloquea /admin /api)
   sitemap.ts        /sitemap.xml
@@ -157,7 +165,9 @@ app/
   opengraph-image.tsx  Imagen OG de marca (1200×630, generada en build)
 components/
   landing/          Secciones de la landing (Hero, Ticker, MegaApp, etc.)
-  admin/            Componentes del dashboard
+  megafono/         Tarjeta, índice y vista de nota del blog
+  staff/            Página del equipo
+  admin/            Componentes del dashboard (incl. PostEditor, TipTap)
   radio/            RadioProvider (contexto global del player + SSE)
   ui.tsx            Primitivas de diseño (Icon, Section, Bloom, etc.)
   data.ts           Datos estáticos de fallback
@@ -170,6 +180,10 @@ lib/
   radio-state.ts    Snapshot de estado en vivo (now-playing, programa, stats, tv_live)
   seo.ts            Fuente única de SEO (datos + JSON-LD)
   footer.ts         Modelo del footer editable (tipos, default, parser, validación URL)
+  hosts.ts          Modelo de locutor (bio, redes, vínculo con programas) — PURO
+  megafono.ts       Modelo del blog (estados, slug, validación) — PURO
+  posts.ts          Lectura de notas publicadas (server-only)
+  sanitize.ts       Sanitizador de HTML de las notas (server-only) — se aplica al GUARDAR
   version.ts        APP_VERSION (versión mostrada en web + admin)
 prisma/
   schema.prisma     Fuente de verdad de tablas/columnas (no se usa el engine en runtime)

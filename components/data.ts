@@ -5,6 +5,7 @@
 export const NAV_LINKS = [
   { label: "INICIO", href: "/#inicio" },
   { label: "PROGRAMACIÓN", href: "/#programacion" },
+  { label: "MEGÁFONO", href: "/megafono" },
   { label: "STAFF", href: "/staff" },
   { label: "MEGA TV", href: "/#megatv" },
   { label: "GALERÍA", href: "/#galeria" },

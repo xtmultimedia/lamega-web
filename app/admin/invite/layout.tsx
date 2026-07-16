@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 
-// Public page (the invitee has no session yet) — keep it out of search results.
+// Public page (there's no session yet) — keep it out of search results.
+// The title serves both flows this page handles (first invite and password
+// reset); the heading inside switches on ?reset=1, but metadata can't.
 export const metadata: Metadata = {
-  title: "Activar tu acceso",
+  title: "Acceso al panel",
   robots: { index: false, follow: false },
 };
 

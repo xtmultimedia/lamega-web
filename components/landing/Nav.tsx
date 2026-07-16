@@ -186,14 +186,20 @@ export function Nav() {
 
       <style>{`
         .nav-ov-link:hover{ color: var(--red-bright) !important; }
-        @media (max-width: 1180px){ .nav-social{ display:none !important; } }
-        @media (max-width: 1024px){
+        /* The horizontal nav is width-critical. Measured: the links row needs
+           ~1200px with every item shown (MEGA TV only appears while on air), and
+           it had exactly 0px of slack even before EL MEGÁFONO was added — so it
+           already overflowed whenever the TV went live. Tighten the per-link
+           padding first, then hand over to the burger. These breakpoints come
+           from those measurements, not from round numbers. */
+        @media (max-width: 1360px){ .nav-links{ --nav-pad: 10px; } .nav-social{ display:none !important; } }
+        @media (max-width: 1150px){
           .nav-links{ display:none !important; }
           .nav-admin{ display:none !important; }
           .nav-burger{ display:inline-flex !important; }
         }
         @media (max-width: 560px){ .nav-cta{ display:none !important; } }
-        @media (min-width: 1025px){ .nav-overlay{ display:none !important; } }
+        @media (min-width: 1151px){ .nav-overlay{ display:none !important; } }
       `}</style>
     </header>
   );
@@ -208,7 +214,7 @@ function NavLink({ label, href, onClick }: { label: string; href: string; onClic
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{
-        position: "relative", padding: "10px 15px", fontFamily: "var(--font-display)", fontWeight: 600,
+        position: "relative", padding: "10px var(--nav-pad, 15px)", fontFamily: "var(--font-display)", fontWeight: 600,
         fontSize: 14, letterSpacing: "0.04em", textTransform: "uppercase",
         color: hover ? "#fff" : "var(--fg-2)", transition: "color var(--dur)", whiteSpace: "nowrap",
       }}
@@ -216,7 +222,8 @@ function NavLink({ label, href, onClick }: { label: string; href: string; onClic
       {label}
       <span
         style={{
-          position: "absolute", left: 15, right: 15, bottom: 6, height: 2, borderRadius: 2,
+          // tracks --nav-pad so the underline stays inset with the label
+          position: "absolute", left: "var(--nav-pad, 15px)", right: "var(--nav-pad, 15px)", bottom: 6, height: 2, borderRadius: 2,
           background: "linear-gradient(90deg, var(--red), var(--red-bright))",
           transform: hover ? "scaleX(1)" : "scaleX(0)", transformOrigin: "left",
           transition: "transform var(--dur) var(--ease-out)", boxShadow: "0 0 10px rgba(255,45,52,0.7)",
