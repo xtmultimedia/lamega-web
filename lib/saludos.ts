@@ -9,7 +9,7 @@
 // sigue usando el formulario viejo: se puede desplegar el sitio antes que el
 // buzón sin dejar nada roto a la vista.
 export const SALUDOS = {
-  url: "",            // p. ej. "https://xt-saludos.<cuenta>.workers.dev" (sin barra final)
+  url: "https://xt-saludos.xt-saludos.workers.dev",   // buzón XT Saludos en producción (sin barra final)
   estacion: "lamega",
 } as const;
 
