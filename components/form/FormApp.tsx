@@ -5,6 +5,8 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/ui";
+import { SaludosWidget } from "@/components/saludos/SaludosWidget";
+import { saludosActivo } from "@/lib/saludos";
 import { useStationData } from "@/components/useStationData";
 
 /* ---------- Field shell ---------- */
@@ -701,7 +703,11 @@ export function FormApp() {
 
           {/* form card */}
           <div style={{ background: "var(--bg-1)", border: "1px solid var(--line-1)", borderRadius: "var(--r-lg)", padding: "clamp(22px, 4vw, 36px)", boxShadow: "var(--shadow-lg)" }}>
-            {tab === "cancion" ? <CancionForm /> : <PublicidadForm />}
+            {/* XT Saludos: con el buzón configurado, el pedido va directo al aire vía
+                XT Radio (catálogo real + filtro IA). Sin buzón, el formulario de siempre. */}
+            {tab === "cancion"
+              ? (saludosActivo() ? <SaludosWidget ancho="100%" plano /> : <CancionForm />)
+              : <PublicidadForm />}
           </div>
 
           <p style={{ textAlign: "center", fontSize: 13, color: "var(--fg-3)", marginTop: 24 }}>
