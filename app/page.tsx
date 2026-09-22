@@ -4,6 +4,7 @@ import { RadioProvider } from "@/components/radio/RadioProvider";
 import { Nav } from "@/components/landing/Nav";
 import { Hero } from "@/components/landing/Hero";
 import { Ticker } from "@/components/landing/Ticker";
+import { Saludos } from "@/components/landing/Saludos";
 import { MegaTV } from "@/components/landing/MegaTV";
 import { Programacion } from "@/components/landing/Programacion";
 import { Megafono } from "@/components/landing/Megafono";
@@ -24,6 +25,7 @@ export default function HomePage() {
       <EmergencyBanner />
       <Hero />
       <Ticker />
+      <Saludos />
       <MegaTV />
       <Programacion />
       <Megafono />
