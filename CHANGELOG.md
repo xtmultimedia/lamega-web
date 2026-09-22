@@ -8,6 +8,11 @@ La versión mostrada en la web y el panel sale de [`lib/version.ts`](lib/version
 
 ---
 
+## [1.3.1] — 2026-09-22
+
+### Corregido
+- **Las tipografías de marca nunca se aplicaban.** Todo el sitio (web pública y panel) se veía con la fuente del sistema en vez de **Sora** (texto), **Saira** (títulos) y **Space Mono** (etiquetas). Las fuentes sí se descargaban, pero `next/font` ponía sus variables (`--font-sora`, …) en `<body>`, mientras que `globals.css` arma los alias (`--font-body: var(--font-sora), …`) en `:root`, o sea en `<html>`, que no ve variables definidas en un hijo. Los alias quedaban inválidos y todo caía al default de Tailwind. Ahora las variables van en `<html>`. Revisado en portada, `/pide` y login del panel, a 375 px y en escritorio. El menú de escritorio tiene incluso algo más de margen que antes, porque Saira es más angosta que la fuente del sistema.
+
 ## [1.3.0] — 2026-07-16
 
 ### Añadido

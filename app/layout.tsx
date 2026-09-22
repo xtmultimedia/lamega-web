@@ -67,8 +67,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const jsonLd = [radioStationJsonLd(), webSiteJsonLd()];
   return (
-    <html lang="es">
-      <body className={`${saira.variable} ${sora.variable} ${spaceMono.variable}`}>
+    // Font variables must live on <html>: globals.css aliases them in :root
+    // (--font-body: var(--font-sora)), and :root can't see vars set on <body>.
+    <html lang="es" className={`${saira.variable} ${sora.variable} ${spaceMono.variable}`}>
+      <body>
         {children}
         <script
           type="application/ld+json"
