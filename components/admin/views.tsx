@@ -259,12 +259,43 @@ interface StationConfigForm {
   autoOn: boolean;
   maintenance: boolean;
   footer: FooterColumn[];
+  // OneStream player embed URL or <iframe> code (server validates + stores only the URL)
+  tvEmbedUrl?: string | null;
 }
 
 export function ConfiguracionView() {
   const [cfg, setCfg] = useState<StationConfigForm | null>(null);
   const [saving, setSaving] = useState(false);
   const [note, setNote] = useState<{ ok: boolean; msg: string } | null>(null);
+  // manual Mega TV on-air switch (POST /api/admin/tv) — fallback if OBS/automation fails
+  const [tvLive, setTvLive] = useState<boolean | null>(null);
+  const [tvBusy, setTvBusy] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/admin/tv")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setTvLive(!!d.live))
+      .catch(() => {});
+  }, []);
+
+  const toggleTv = async (live: boolean) => {
+    setTvBusy(true);
+    try {
+      const res = await fetch("/api/admin/tv", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ live }),
+      });
+      if (!res.ok) throw new Error();
+      setTvLive(live);
+      setNote({ ok: true, msg: live ? "Mega TV marcada AL AIRE en el sitio." : "Mega TV marcada FUERA DEL AIRE en el sitio." });
+    } catch {
+      setNote({ ok: false, msg: "No se pudo cambiar el estado de Mega TV." });
+    } finally {
+      setTvBusy(false);
+      setTimeout(() => setNote(null), 3500);
+    }
+  };
 
   useEffect(() => {
     fetch("/api/admin/config")
@@ -319,12 +350,18 @@ export function ConfiguracionView() {
           autoOn: cfg.autoOn,
           maintenance: cfg.maintenance,
           footer: cfg.footer,
+          tvEmbedUrl: cfg.tvEmbedUrl ?? "",
         }),
       });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        const embedMsg = err?.details?.fieldErrors?.tvEmbedUrl?.[0];
+        throw new Error(embedMsg ?? "");
+      }
       setNote({ ok: true, msg: "Configuración guardada — el sitio público ya muestra los nuevos datos." });
-    } catch {
-      setNote({ ok: false, msg: "No se pudo guardar. Inténtalo de nuevo." });
+    } catch (e) {
+      const msg = e instanceof Error && e.message ? e.message : "No se pudo guardar. Inténtalo de nuevo.";
+      setNote({ ok: false, msg });
     } finally {
       setSaving(false);
       setTimeout(() => setNote(null), 3500);
@@ -413,6 +450,40 @@ export function ConfiguracionView() {
             <Toggle on={cfg[r.k] as boolean} onChange={setField(r.k)} color={r.danger ? "var(--red)" : "var(--green)"} />
           </div>
         ))}
+      </Card>
+
+      {/* ---- Mega TV: reproductor OneStream + interruptor manual ---- */}
+      <Card style={{ marginTop: 20 }}>
+        <div className="mono" style={{ fontSize: 11, letterSpacing: "0.2em", color: "var(--fg-3)", textTransform: "uppercase", marginBottom: 6 }}>
+          Mega TV · reproductor en la web
+        </div>
+        <div style={{ fontSize: 13, color: "var(--fg-3)", marginBottom: 14 }}>
+          En OneStream: <b>Stream Players → Default Player → Copy Embed Code</b>. Pega aquí el código completo (o solo la URL
+          <span className="mono"> https://player.onestream.live/embed?token=…</span>) y guarda. Solo se acepta el reproductor de OneStream.
+        </div>
+        <textarea
+          value={cfg.tvEmbedUrl ?? ""}
+          onChange={(e) => setField("tvEmbedUrl")(e.target.value)}
+          rows={3}
+          placeholder='<iframe src="https://player.onestream.live/embed?token=…" …></iframe>'
+          style={{
+            width: "100%", background: "var(--bg-2)", border: "1px solid var(--line-2)", borderRadius: "var(--r-sm)",
+            padding: "11px 12px", color: "var(--fg-2)", fontFamily: "var(--font-mono)", fontSize: 12, resize: "vertical",
+          }}
+        />
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap", marginTop: 16 }}>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: "#fff" }}>
+              Mega TV {tvLive === null ? "…" : tvLive ? "AL AIRE" : "fuera del aire"}
+            </div>
+            <div style={{ fontSize: 13, color: "var(--fg-3)", marginTop: 3 }}>
+              Normalmente lo cambia OBS solo. Úsalo a mano si OBS falla: muestra u oculta la sección Mega TV en la web.
+            </div>
+          </div>
+          <AdmButton icon={tvBusy ? "loader-2" : tvLive ? "square" : "radio"} onClick={() => toggleTv(!tvLive)}>
+            {tvLive ? "Marcar fuera del aire" : "Marcar al aire"}
+          </AdmButton>
+        </div>
       </Card>
 
       {/* ---- Footer editor ---- */}

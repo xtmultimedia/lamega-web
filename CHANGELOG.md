@@ -8,6 +8,34 @@ La versión mostrada en la web y el panel sale de [`lib/version.ts`](lib/version
 
 ---
 
+## [1.4.0] — 2026-10-02
+
+### Añadido
+- **El reproductor de Mega TV ya no está fijo en el código.** La URL del embed de OneStream se
+  edita desde el panel → **Configuración → Mega TV · reproductor en la web** (pegar el código
+  completo de *Stream Players → Copy Embed Code* o solo la URL). Se guarda en
+  `StationConfig.tvEmbedUrl` (migración idempotente en `lib/prisma.ts`) y llega al sitio por SSE
+  (`snapshot.config.tv_embed_url` y `config_update`) sin necesidad de desplegar.
+- **Validación estricta del embed** (`lib/tv-embed.ts`, módulo puro): solo `https://player.onestream.live/embed?token=…`
+  con token real; rechaza otros hosts, `http`, credenciales, puertos, `javascript:`/`data:` y el
+  marcador *"Upgrade your plan to embed this player"* que OneStream pone cuando el plan no incluye
+  embed. Se valida al guardar (servidor) y otra vez antes de renderizar el `<iframe>`.
+- **Interruptor manual de Mega TV** en el panel (`GET/POST /api/admin/tv`, roles admin y editor):
+  muestra/oculta la sección a mano si OBS o la automatización fallan.
+- **La bandera "al aire" caduca.** `POST /api/radio/tv` sella `StationState.tvLiveAt`; un `tvLive=true`
+  sin renovar por más de **8 h** se trata como apagado (evita que Mega TV quede "al aire" si OBS se cae).
+  Repetir `{"live": true}` mientras se transmite actúa como latido (heartbeat).
+- **Script de OBS** `OBS_SCRIPTS/lamega_tv_live.lua` (en la carpeta de operación, fuera de este repo): avisa
+  `live:true/false` al iniciar/terminar la transmisión y envía latido cada 30 min.
+
+### Cambiado
+- `MegaTV.tsx`: `loading="eager"` (la sección solo existe en vivo), `referrerPolicy`, enlace
+  "Ábrelo en una pestaña nueva" y tarjeta *"Estamos al aire"* cuando todavía no hay player válido
+  (en vez de un iframe roto).
+
+### Corregido
+- **El embed anterior estaba roto**: el token fijo del código (`MzY0MzEzMQ==`) devolvía `HTTP 400 "Invalid token format"`.
+
 ## [1.3.1] — 2026-09-22
 
 ### Corregido

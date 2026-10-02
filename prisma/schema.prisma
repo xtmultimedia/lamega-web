@@ -169,6 +169,7 @@ model StationConfig {
   autoOn      Boolean  @default(true)
   maintenance Boolean  @default(false)
   footer      String?  @db.Text // JSON: [{ title, links: [{ label, url? }] }] — null = usa el footer por defecto
+  tvEmbedUrl  String?  @db.VarChar(500) // OneStream Universal Embed Player URL (solo https://player.onestream.live/embed?token=…); null = Mega TV sin player
   updatedAt   DateTime @updatedAt
 }
 
@@ -196,5 +197,6 @@ model StationState {
   emergencyActive  Boolean  @default(false)
   emergencyMessage String?
   tvLive           Boolean  @default(false) // Mega TV on-air flag, pushed by the automation app
+  tvLiveAt         DateTime? // last live:true signal (heartbeat); a flag older than TV_LIVE_TTL_MS counts as off
   updatedAt        DateTime @updatedAt
 }

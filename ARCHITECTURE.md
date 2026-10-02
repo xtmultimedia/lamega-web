@@ -280,7 +280,7 @@ Layout (app/layout.tsx)
 | App Store | App iOS de La Mega | Link fijo en MegaApp.tsx |
 | Amazon Alexa | Skill "La Mega Ecuador" | Gestionada por FastCast4U |
 | Spotify | Links de playlists | Links fijos en data.ts |
-| OneStream Live | Player de video Mega TV | Universal Embed Player en MegaTV.tsx |
+| OneStream Live | Player de video Mega TV | Universal Embed Player en MegaTV.tsx; URL editable en Configuración (`tvEmbedUrl`), validada por `lib/tv-embed.ts` |
 | GitHub Actions | Auto-deploy a FastComet (build → rsync/SSH → restart) | `.github/workflows/deploy.yml` + secrets |
 
 ## SEO (buscadores tradicionales + IA)

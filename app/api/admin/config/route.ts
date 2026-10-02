@@ -4,6 +4,7 @@ import { requireRole } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
 import { emit } from "@/lib/events";
 import { isSafeFooterUrl, parseFooter } from "@/lib/footer";
+import { extractTvEmbedUrl, isSafeTvEmbedUrl } from "@/lib/tv-embed";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,7 @@ const DEFAULTS = {
   autoOn: true,
   maintenance: false,
   footer: null as string | null,
+  tvEmbedUrl: null as string | null,
 };
 
 // Configuración is admin-only (editors/locutores get 403).
@@ -50,6 +52,19 @@ const footerSchema = z
   .nullable()
   .optional();
 
+// OneStream player embed: accepts the bare URL or the whole <iframe> snippet, stores
+// only the validated URL. Empty string clears it. `undefined` = field not sent
+// (older panel build) and must leave the stored value untouched.
+const tvEmbedSchema = z
+  .string()
+  .max(1500)
+  .nullable()
+  .optional()
+  .transform((v) => (v === undefined ? undefined : extractTvEmbedUrl(v)))
+  .refine((v) => v === undefined || v === "" || isSafeTvEmbedUrl(v), {
+    message: "Pega la URL del reproductor de OneStream (https://player.onestream.live/embed?token=…) o su código iframe",
+  });
+
 const schema = z.object({
   frequency: z.string().min(1).max(40),
   city: z.string().min(1).max(60),
@@ -61,6 +76,7 @@ const schema = z.object({
   autoOn: z.boolean(),
   maintenance: z.boolean(),
   footer: footerSchema,
+  tvEmbedUrl: tvEmbedSchema,
 });
 
 export async function PUT(req: Request) {
@@ -72,9 +88,11 @@ export async function PUT(req: Request) {
     return NextResponse.json({ error: "Invalid body", details: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { footer, ...rest } = parsed.data;
+  const { footer, tvEmbedUrl, ...rest } = parsed.data;
   // serialize footer to a JSON string (null clears it → public site uses defaults)
-  const data = { ...rest, footer: footer == null ? null : JSON.stringify(footer) };
+  const data: Record<string, unknown> = { ...rest, footer: footer == null ? null : JSON.stringify(footer) };
+  // only touch the embed column when the client sent it ("" clears → null)
+  if (tvEmbedUrl !== undefined) data.tvEmbedUrl = tvEmbedUrl === "" ? null : tvEmbedUrl;
 
   const config = await prisma.stationConfig.upsert({
     where: { id: 1 },
@@ -89,6 +107,7 @@ export async function PUT(req: Request) {
     coverage: config.coverage,
     slogan: config.slogan,
     footer: parseFooter(config.footer),
+    tv_embed_url: isSafeTvEmbedUrl(config.tvEmbedUrl) ? config.tvEmbedUrl : null,
   });
 
   return NextResponse.json({ ok: true, config: { ...config, footer: parseFooter(config.footer) } });

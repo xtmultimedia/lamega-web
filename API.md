@@ -195,6 +195,13 @@ muestra Mega TV solo mientras `live === true` (auto mostrar/ocultar).
 
 **SSE emitido:** `tv_status` → `{ "live": true }`
 
+**Latido y caducidad:** el servidor guarda la hora de la última señal `live:true`. Si el cliente
+(OBS) sigue transmitiendo, conviene **repetir `{ "live": true }` cada ~30 min**: un `true` sin renovar
+por más de **8 horas** se considera apagado en el sitio (por si OBS se cae sin avisar `false`).
+
+El player no se configura por esta API: la URL del embed de OneStream se edita en el panel
+(Configuración → Mega TV) o con `PUT /api/admin/config` (`tvEmbedUrl`, requiere sesión admin).
+
 ---
 
 ## GET /api/radio/events — Server-Sent Events

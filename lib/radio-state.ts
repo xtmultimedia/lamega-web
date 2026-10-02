@@ -1,5 +1,6 @@
 import { prisma } from "./prisma";
 import { parseFooter } from "./footer";
+import { isSafeTvEmbedUrl, isTvLiveFresh } from "./tv-embed";
 
 export async function getStats() {
   const startOfDay = new Date();
@@ -71,13 +72,14 @@ export async function getSnapshot() {
       active: state?.emergencyActive ?? false,
       message: state?.emergencyMessage ?? null,
     },
-    tv_live: state?.tvLive ?? false,
+    tv_live: isTvLiveFresh(state?.tvLive, state?.tvLiveAt),
     config: {
       frequency: config?.frequency ?? "99.9 FM",
       city: config?.city ?? "Guayaquil",
       coverage: config?.coverage ?? "Ecuador",
       slogan: config?.slogan ?? "Solo La Mega, supera a La Mega",
       footer: parseFooter(config?.footer),
+      tv_embed_url: isSafeTvEmbedUrl(config?.tvEmbedUrl) ? (config?.tvEmbedUrl as string) : null,
     },
     stats,
   };

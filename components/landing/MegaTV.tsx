@@ -3,13 +3,19 @@
 import React, { useState } from "react";
 import { Section, SectionHead, Bloom, SOCIAL } from "@/components/ui";
 import { useRadio } from "@/components/radio/RadioProvider";
+import { isSafeTvEmbedUrl } from "@/lib/tv-embed";
 
 // OneStream Live "Universal Embed Player" — one permanent embed for all events.
 // Shows the configured offline poster when not broadcasting and auto-connects
 // the moment a stream goes LIVE in OneStream (no manual switch on the site).
 // Customize the offline poster in OneStream → Universal Embed Settings →
 // Universal Player → Background.
-const ONESTREAM_EMBED = "https://player.onestream.live/embed?token=MzY0MzEzMQ==&type=up";
+//
+// The embed URL is NOT hardcoded: it is an admin setting (Panel → Configuración →
+// Mega TV, StationConfig.tvEmbedUrl) copied from OneStream → Stream Players →
+// Copy Embed Code. We re-validate it here (host, https, real token) before ever
+// rendering an <iframe>; without a valid URL the section shows a "coming up"
+// card instead of a broken player.
 
 function LivePill({ name, color, icon, href }: { name: string; color: string; icon: string; href: string }) {
   const [h, setH] = useState(false);
@@ -39,7 +45,8 @@ function LivePill({ name, color, icon, href }: { name: string; color: string; ic
 }
 
 export function MegaTV() {
-  const { program, tvLive } = useRadio();
+  const { program, tvLive, config } = useRadio();
+  const embedUrl = isSafeTvEmbedUrl(config.tv_embed_url) ? (config.tv_embed_url as string) : null;
   const fb = SOCIAL.facebook, tt = SOCIAL.tiktok, yt = SOCIAL.youtube;
   const nowOn = program ? `${program.program_name} · ${program.host}` : null;
 
@@ -68,14 +75,31 @@ export function MegaTV() {
           background: "radial-gradient(120% 120% at 50% 0%, #1c0a0c, #0a0a0a 70%)",
         }}
       >
-        <iframe
-          src={ONESTREAM_EMBED}
-          title="Mega TV 99.9 — señal en vivo"
-          allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
-          allowFullScreen
-          loading="lazy"
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0, display: "block" }}
-        />
+        {embedUrl ? (
+          <iframe
+            src={embedUrl}
+            title="Mega TV 99.9 — señal en vivo"
+            allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+            allowFullScreen
+            referrerPolicy="strict-origin-when-cross-origin"
+            // The section only renders while on air, so connect right away (no lazy load).
+            loading="eager"
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0, display: "block" }}
+          />
+        ) : (
+          <div
+            style={{
+              position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center",
+              justifyContent: "center", gap: 10, textAlign: "center", padding: 24,
+            }}
+          >
+            <span style={{ width: 11, height: 11, borderRadius: "50%", background: "var(--red-bright)", boxShadow: "0 0 12px var(--red-bright)", animation: "pulse-dot 1.3s infinite" }} />
+            <div className="display" style={{ fontSize: 22, color: "#fff" }}>Estamos al aire</div>
+            <div style={{ fontSize: 14, color: "var(--fg-3)", maxWidth: 360 }}>
+              La señal de video se está preparando. Mientras tanto, síguenos en vivo en nuestras redes.
+            </div>
+          </div>
+        )}
 
         {/* brand wordmark — top-right, non-interactive so it never blocks player controls */}
         <div
@@ -106,6 +130,16 @@ export function MegaTV() {
             <div className="display" style={{ fontSize: 18, color: "#fff" }}>{nowOn ?? "Programación La Mega 99.9"}</div>
           </div>
         </div>
+        {embedUrl && (
+          <a
+            href={embedUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ fontSize: 13, color: "var(--fg-3)", textDecoration: "underline" }}
+          >
+            ¿No carga el video? Ábrelo en una pestaña nueva
+          </a>
+        )}
       </div>
 
       {/* follow elsewhere */}
