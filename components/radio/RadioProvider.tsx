@@ -50,6 +50,8 @@ export interface StationConfigInfo {
   coverage: string;
   slogan: string;
   footer?: FooterColumn[] | null;
+  // OneStream player embed (validated server-side); null → Mega TV has no player yet
+  tv_embed_url?: string | null;
 }
 
 const DEFAULT_CONFIG: StationConfigInfo = {
@@ -58,6 +60,7 @@ const DEFAULT_CONFIG: StationConfigInfo = {
   coverage: "Imbabura",
   slogan: "Solo La Mega",
   footer: null,
+  tv_embed_url: null,
 };
 
 interface RadioCtxValue {

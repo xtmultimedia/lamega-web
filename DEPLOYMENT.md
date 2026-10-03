@@ -194,7 +194,11 @@ La app Python empuja estado vía `/api/radio/*` con el header `X-Radio-API-Key`.
 de now-playing/programa/stats/emergency:
 
 - `POST /api/radio/tv {"live": true|false}` — muestra/oculta la sección **Mega TV** según la señal
-  (llamar `true` al iniciar la transmisión en OneStream, `false` al detenerla).
+  (llamar `true` al iniciar la transmisión en OneStream, `false` al detenerla; repetir `true` cada ~30 min
+  como latido: un `true` sin renovar por 8 h caduca).
+- **Player de Mega TV:** no requiere variables de entorno. Tras desplegar, un admin pega el código de embed de OneStream en
+  *Panel → Configuración → Mega TV · reproductor en la web*. Las columnas nuevas (`StationConfig.tvEmbedUrl`,
+  `StationState.tvLiveAt`) se crean solas al arrancar (migración idempotente).
 
 Ver [API.md](API.md) y `radio_client_example.py`.
 

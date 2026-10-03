@@ -57,6 +57,12 @@ function pool(): Pool {
       .catch(() => {}); // ignore "duplicate column" once it exists
     p.query("ALTER TABLE StationConfig ADD COLUMN footer TEXT NULL")
       .catch(() => {}); // editable footer (JSON); ignore once it exists
+    // Mega TV: OneStream embed URL (admin-editable) and the timestamp of the last
+    // on-air signal, so a stale tvLive=true expires (see lib/tv-embed.ts).
+    p.query("ALTER TABLE StationConfig ADD COLUMN tvEmbedUrl VARCHAR(500) NULL")
+      .catch(() => {});
+    p.query("ALTER TABLE StationState ADD COLUMN tvLiveAt DATETIME NULL")
+      .catch(() => {});
     // Locutor profiles (bio + socials JSON) and the real Show↔Host link
     // (hostIds JSON array) that replaces fuzzy name matching.
     p.query("ALTER TABLE Host ADD COLUMN bio TEXT NULL").catch(() => {});
